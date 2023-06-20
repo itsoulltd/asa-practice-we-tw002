@@ -1,0 +1,86 @@
+{
+	"name": "MoveToTaskMetadata_Generic",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "asa-practice-we-tw002-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Container": {
+				"type": "string",
+				"defaultValue": "metainput"
+			},
+			"Directory": {
+				"type": "string",
+				"defaultValue": null
+			},
+			"MetaFileName": {
+				"type": "string",
+				"defaultValue": "metafile.csv"
+			}
+		},
+		"annotations": [],
+		"type": "DelimitedText",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().MetaFileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@coalesce(dataset().Directory, '')",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().Container",
+					"type": "Expression"
+				}
+			},
+			"columnDelimiter": ",",
+			"escapeChar": "\\",
+			"firstRowAsHeader": true,
+			"nullValue": "null",
+			"quoteChar": "\""
+		},
+		"schema": [
+			{
+				"name": "ContainerName",
+				"type": "String"
+			},
+			{
+				"name": "Action",
+				"type": "String"
+			},
+			{
+				"name": "SourceDir",
+				"type": "String"
+			},
+			{
+				"name": "SourceFile",
+				"type": "String"
+			},
+			{
+				"name": "SourceType",
+				"type": "String"
+			},
+			{
+				"name": "TargetContainer",
+				"type": "String"
+			},
+			{
+				"name": "TargetDir",
+				"type": "String"
+			},
+			{
+				"name": "TargetFile",
+				"type": "String"
+			},
+			{
+				"name": "TargetType",
+				"type": "String"
+			}
+		]
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

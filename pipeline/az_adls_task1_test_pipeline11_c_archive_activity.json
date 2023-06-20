@@ -1,0 +1,154 @@
+{
+	"name": "az_adls_task1_test_pipeline11_c_archive_activity",
+	"properties": {
+		"activities": [
+			{
+				"name": "MoveOldFilesToArchive",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "BinarySource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true
+						},
+						"formatSettings": {
+							"type": "BinaryReadSettings"
+						}
+					},
+					"sink": {
+						"type": "BinarySink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "MoveToTaskSourceDirectory_Generic",
+						"type": "DatasetReference",
+						"parameters": {
+							"ContainerName": {
+								"value": "@pipeline().parameters.TargetContainer",
+								"type": "Expression"
+							},
+							"DirectoryName": {
+								"value": "@pipeline().parameters.TargetDir",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@if( and(\n        equals(coalesce(pipeline().parameters.TargetFile, 'null'), 'null')\n        , equals(coalesce(pipeline().parameters.TargetType, 'null'), 'null')\n    )\n    , ''\n    , concat(pipeline().parameters.TargetFile\n        , '.'\n        , pipeline().parameters.TargetType\n    )\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "MoveToTaskSourceDirectory_Generic",
+						"type": "DatasetReference",
+						"parameters": {
+							"ContainerName": {
+								"value": "@pipeline().parameters.ArchiveContainer",
+								"type": "Expression"
+							},
+							"DirectoryName": {
+								"value": "@concat(\n    formatDateTime(utcnow(), 'yyyyMMdd')\n    , '/'\n    , coalesce(pipeline().parameters.TargetDir, pipeline().parameters.SourceDir)\n    , '_', formatDateTime(utcnow(), 'HHmmss')\n)",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@if( and(\n        equals(coalesce(pipeline().parameters.TargetFile, 'null'), 'null')\n        , equals(coalesce(pipeline().parameters.TargetType, 'null'), 'null')\n    )\n    , ''\n    , concat(pipeline().parameters.TargetFile\n        , '_'\n        , formatDateTime(utcnow(), 'HHmmss')\n        , '.'\n        , pipeline().parameters.TargetType\n    )\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "DeleteOldFilesAfterArchived",
+				"type": "Delete",
+				"dependsOn": [
+					{
+						"activity": "MoveOldFilesToArchive",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "MoveToTaskSourceDirectory_Generic",
+						"type": "DatasetReference",
+						"parameters": {
+							"ContainerName": {
+								"value": "@pipeline().parameters.TargetContainer",
+								"type": "Expression"
+							},
+							"DirectoryName": {
+								"value": "@pipeline().parameters.TargetDir",
+								"type": "Expression"
+							},
+							"FileName": {
+								"value": "@if( and(\n        equals(coalesce(pipeline().parameters.TargetFile, 'null'), 'null')\n        , equals(coalesce(pipeline().parameters.TargetType, 'null'), 'null')\n    )\n    , ''\n    , concat(pipeline().parameters.TargetFile\n        , '.'\n        , pipeline().parameters.TargetType\n    )\n)",
+								"type": "Expression"
+							}
+						}
+					},
+					"enableLogging": false,
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					}
+				}
+			}
+		],
+		"parameters": {
+			"ArchiveContainer": {
+				"type": "string"
+			},
+			"TargetContainer": {
+				"type": "string"
+			},
+			"TargetDir": {
+				"type": "string"
+			},
+			"TargetFile": {
+				"type": "string"
+			},
+			"TargetType": {
+				"type": "string"
+			},
+			"SourceDir": {
+				"type": "string"
+			},
+			"ProcessID": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Task-1-Final/main"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-15T17:13:11Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

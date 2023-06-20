@@ -1,0 +1,37 @@
+{
+	"name": "GetAllManufacturersJsonWriter",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "asa-practice-we-tw002-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"FileName": {
+				"type": "string",
+				"defaultValue": "GetAllManufacturers.json"
+			},
+			"TargetDirName": {
+				"type": "string",
+				"defaultValue": null
+			}
+		},
+		"annotations": [],
+		"type": "Json",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().FileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@concat('Training','/',coalesce(dataset().TargetDirName,''))",
+					"type": "Expression"
+				},
+				"fileSystem": "training"
+			}
+		},
+		"schema": {}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

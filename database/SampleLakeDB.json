@@ -1,0 +1,25 @@
+{
+	"name": "SampleLakeDB",
+	"properties": {
+		"Name": "SampleLakeDB",
+		"EntityType": "DATABASE",
+		"Origin": {
+			"Type": "SPARK"
+		},
+		"Properties": {
+			"IsSyMSCDMDatabase": true
+		},
+		"Source": {
+			"Provider": "ADLS",
+			"Location": "abfss://synapsefs@asapractice01tw002.dfs.core.windows.net/SampleLakeDB",
+			"Properties": {
+				"FormatType": "parquet",
+				"LinkedServiceName": "asa-practice-we-tw002-WorkspaceDefaultStorage"
+			}
+		},
+		"PublishStatus": "PUBLISHED",
+		"ObjectVersion": 2,
+		"ObjectId": "2f1277ed-999d-4f15-905a-cbef96123657"
+	},
+	"type": "DATABASE"
+}

@@ -1,0 +1,43 @@
+{
+	"name": "MoveToTaskSourceDirectory_Generic",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "asa-practice-we-tw002-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"ContainerName": {
+				"type": "string",
+				"defaultValue": "training"
+			},
+			"DirectoryName": {
+				"type": "string",
+				"defaultValue": "default"
+			},
+			"FileName": {
+				"type": "string",
+				"defaultValue": "sample.csv"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().FileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@dataset().DirectoryName",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().ContainerName",
+					"type": "Expression"
+				}
+			}
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

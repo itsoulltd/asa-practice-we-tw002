@@ -1,0 +1,96 @@
+{
+	"name": "notebook_task1_test_pipeline4",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "SPoolWeSmall",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "60e85933-8446-4d67-a0f9-585544665bf3"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"synapse_widget": {
+				"version": "0.1"
+			},
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/2883565e-124a-4a7f-a504-d725e5a61b64/resourceGroups/asa_rg_practice_01/providers/Microsoft.Synapse/workspaces/asa-practice-we-tw002/bigDataPools/SPoolWeSmall",
+				"name": "SPoolWeSmall",
+				"type": "Spark",
+				"endpoint": "https://asa-practice-we-tw002.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SPoolWeSmall",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"#Import MSSPARKUTILS package\r\n",
+					"from notebookutils import mssparkutils"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"#Param Names\r\n",
+					"SubDirName = \"Not-Set\"\r\n",
+					"TargetFileType = \"Not-Set\"\r\n",
+					"SourceFileList = \"Not-Set\"\r\n",
+					"\r\n",
+					"#Test output\r\n",
+					"print(\"SubDirName: {}, TargetFileType: {}\".format(SubDirName, TargetFileType))\r\n",
+					"print(\"FileList: {}\".format(SourceFileList))\r\n",
+					""
+				],
+				"execution_count": 6
+			}
+		]
+	}
+}

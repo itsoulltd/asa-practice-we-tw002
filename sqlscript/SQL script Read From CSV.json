@@ -1,0 +1,17 @@
+{
+	"name": "SQL script Read From CSV",
+	"properties": {
+		"content": {
+			"query": "-- This is auto-generated code\nSELECT\n    TOP 10 *\nFROM\n    OPENROWSET(\n        BULK 'https://asapractice01tw002.dfs.core.windows.net/training/Source_Data/StoreDemoGraphics.csv',\n        FORMAT = 'CSV', HEADER_ROW = TRUE,\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n\nSELECT\n    COUNT(*) as [row_count]\n    , MAX(storeId) as [max_id]\nFROM\n    OPENROWSET(\n        BULK 'https://asapractice01tw002.dfs.core.windows.net/training/Source_Data/StoreDemoGraphics.csv',\n        FORMAT = 'CSV', HEADER_ROW = TRUE,\n        PARSER_VERSION = '2.0'\n    ) AS [result];\n",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "master",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}

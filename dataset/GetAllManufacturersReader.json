@@ -1,0 +1,25 @@
+{
+	"name": "GetAllManufacturersReader",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "GetAllManufacturersRestService",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"format": {
+				"type": "string",
+				"defaultValue": "json"
+			}
+		},
+		"annotations": [],
+		"type": "RestResource",
+		"typeProperties": {
+			"relativeUrl": {
+				"value": "@concat('/api/vehicles/getallmanufacturers?format=',dataset().format)",
+				"type": "Expression"
+			}
+		},
+		"schema": []
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

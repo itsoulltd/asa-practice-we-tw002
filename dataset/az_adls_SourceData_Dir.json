@@ -1,0 +1,19 @@
+{
+	"name": "az_adls_SourceData_Dir",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "asa-practice-we-tw002-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "Source_Data",
+				"fileSystem": "training"
+			}
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

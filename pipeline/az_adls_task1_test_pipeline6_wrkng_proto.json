@@ -1,0 +1,86 @@
+{
+	"name": "az_adls_task1_test_pipeline6_wrkng_proto",
+	"properties": {
+		"activities": [
+			{
+				"name": "MoveFilesTrainingToTarget",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "BinarySource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"wildcardFolderPath": {
+								"value": "@concat('Training','/',coalesce(pipeline().parameters.SourceDirName,''),'*')",
+								"type": "Expression"
+							},
+							"wildcardFileName": {
+								"value": "@concat('*.', coalesce(pipeline().parameters.FileType, 'csv'))",
+								"type": "Expression"
+							},
+							"deleteFilesAfterCompletion": false
+						},
+						"formatSettings": {
+							"type": "BinaryReadSettings"
+						}
+					},
+					"sink": {
+						"type": "BinarySink",
+						"storeSettings": {
+							"type": "AzureBlobFSWriteSettings"
+						}
+					},
+					"enableStaging": false
+				},
+				"inputs": [
+					{
+						"referenceName": "MoveFromTrainingDataset",
+						"type": "DatasetReference"
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "MoveToTargetDataset",
+						"type": "DatasetReference",
+						"parameters": {
+							"TargetDirName": {
+								"value": "@coalesce(pipeline().parameters.TargetDirName, '')",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"SourceDirName": {
+				"type": "string",
+				"defaultValue": "Bronze"
+			},
+			"FileType": {
+				"type": "string",
+				"defaultValue": "csv"
+			},
+			"TargetDirName": {
+				"type": "string",
+				"defaultValue": null
+			}
+		},
+		"folder": {
+			"name": "Task-1-working-prototypes"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-15T17:12:41Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

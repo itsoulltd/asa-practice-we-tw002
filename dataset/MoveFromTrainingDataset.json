@@ -1,0 +1,19 @@
+{
+	"name": "MoveFromTrainingDataset",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "asa-practice-we-tw002-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "Training",
+				"fileSystem": "training"
+			}
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

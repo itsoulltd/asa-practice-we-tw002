@@ -1,0 +1,100 @@
+{
+	"name": "CreateDynamicTrigger",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"bigDataPool": {
+			"referenceName": "SPoolWeSmall",
+			"type": "BigDataPoolReference"
+		},
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"runAsWorkspaceSystemIdentity": false,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "f8cce4d6-7ead-4b05-8e0d-680a5e98ca3f"
+			}
+		},
+		"metadata": {
+			"saveOutput": false,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "python"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"a365ComputeOptions": {
+				"id": "/subscriptions/2883565e-124a-4a7f-a504-d725e5a61b64/resourceGroups/asa_rg_practice_01/providers/Microsoft.Synapse/workspaces/asa-practice-we-tw002/bigDataPools/SPoolWeSmall",
+				"name": "SPoolWeSmall",
+				"type": "Spark",
+				"endpoint": "https://asa-practice-we-tw002.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/SPoolWeSmall",
+				"auth": {
+					"type": "AAD",
+					"authResource": "https://dev.azuresynapse.net",
+					"authHeader": null
+				},
+				"sparkVersion": "3.3",
+				"nodeCount": 10,
+				"cores": 4,
+				"memory": 28,
+				"extraHeader": null
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# Linking Dependency\r\n",
+					"'''\r\n",
+					"from azure.identity import ClientSecretCredential \r\n",
+					"from azure.mgmt.resource import ResourceManagementClient\r\n",
+					"from azure.mgmt.datafactory import DataFactoryManagementClient\r\n",
+					"from azure.mgmt.datafactory.models import *\r\n",
+					"from datetime import datetime, timedelta\r\n",
+					"import time\r\n",
+					"'''"
+				]
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"# Create a trigger\r\n",
+					"'''\r\n",
+					"    tr_name = 'mytrigger'\r\n",
+					"    scheduler_recurrence = ScheduleTriggerRecurrence(frequency='Minute', interval='15',start_time='2017-12-12T04:00:00Z', end_time='2017-12-12T05:00:00Z', time_zone='UTC')\r\n",
+					"    pipeline_parameters = {'inputPath':'adftutorial/input', 'outputPath':'adftutorial/output'}\r\n",
+					"    pipelines_to_run = []\r\n",
+					"    pipeline_reference = PipelineReference('copyPipeline')\r\n",
+					"    pipelines_to_run.append(TriggerPipelineReference(pipeline_reference, pipeline_parameters))\r\n",
+					"    tr_properties = TriggerResource(properties=ScheduleTrigger(description='My scheduler trigger', pipelines = pipelines_to_run, recurrence=scheduler_recurrence))\r\n",
+					"    adf_client.triggers.create_or_update(rg_name, df_name, tr_name, tr_properties)\r\n",
+					"\r\n",
+					"    # Start the trigger\r\n",
+					"    adf_client.triggers.start(rg_name, df_name, tr_name)\r\n",
+					"'''\r\n",
+					"print(\"Hallo\")"
+				]
+			}
+		]
+	}
+}

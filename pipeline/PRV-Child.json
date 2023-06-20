@@ -1,0 +1,119 @@
+{
+	"name": "PRV-Child",
+	"properties": {
+		"activities": [
+			{
+				"name": "FetchApi",
+				"type": "WebActivity",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"url": "https://www.google.com",
+					"connectVia": {
+						"referenceName": "AutoResolveIntegrationRuntime",
+						"type": "IntegrationRuntimeReference"
+					},
+					"method": "GET"
+				}
+			},
+			{
+				"name": "OnFetchSuccess",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "FetchApi",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "fname",
+							"value": {
+								"type": "String",
+								"content": "Towhid"
+							}
+						},
+						{
+							"key": "lname",
+							"value": {
+								"type": "String",
+								"content": "Islam"
+							}
+						},
+						{
+							"key": "searchEngine",
+							"value": {
+								"type": "String",
+								"content": "https://www.bing.com/"
+							}
+						}
+					],
+					"setSystemVariable": true
+				}
+			},
+			{
+				"name": "OnFetchFailed",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "FetchApi",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "pipelineReturnValue",
+					"value": [
+						{
+							"key": "fname",
+							"value": {
+								"type": "String",
+								"content": "not-found"
+							}
+						},
+						{
+							"key": "lname",
+							"value": {
+								"type": "String",
+								"content": "not-found"
+							}
+						},
+						{
+							"key": "searchEngine",
+							"value": {
+								"type": "String",
+								"content": "https://www.google.com"
+							}
+						}
+					],
+					"setSystemVariable": true
+				}
+			}
+		],
+		"variables": {
+			"fname": {
+				"type": "String"
+			},
+			"lname": {
+				"type": "String"
+			}
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-13T17:56:11Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

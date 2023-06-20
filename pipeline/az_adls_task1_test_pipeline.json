@@ -1,0 +1,124 @@
+{
+	"name": "az_adls_task1_test_pipeline",
+	"properties": {
+		"activities": [
+			{
+				"name": "MetadataAsAllChildsFromSourceData",
+				"type": "GetMetadata",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "az_adls_SourceData_Dir",
+						"type": "DatasetReference"
+					},
+					"fieldList": [
+						"childItems"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			},
+			{
+				"name": "FilterOnlyFiles",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "MetadataAsAllChildsFromSourceData",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MetadataAsAllChildsFromSourceData').output.childItems",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@startswith(item().type, 'File')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachOfFiles",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "FilterOnlyFiles",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('FilterOnlyFiles').output.Value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Get Metadata1",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "az_adls_dynamic_set_SourceData",
+									"type": "DatasetReference",
+									"parameters": {
+										"filename": {
+											"value": "@item().name",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"lastModified",
+									"size"
+								],
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "BinaryReadSettings"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "Task-1-Tests"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-15T17:12:10Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

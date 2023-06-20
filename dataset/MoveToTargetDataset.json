@@ -1,0 +1,28 @@
+{
+	"name": "MoveToTargetDataset",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "asa-practice-we-tw002-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"TargetDirName": {
+				"type": "string",
+				"defaultValue": null
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": {
+					"value": "@concat('Target','/',coalesce(dataset().TargetDirName,''))",
+					"type": "Expression"
+				},
+				"fileSystem": "training"
+			}
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}

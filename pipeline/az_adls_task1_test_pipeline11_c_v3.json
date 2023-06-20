@@ -1,0 +1,343 @@
+{
+	"name": "az_adls_task1_test_pipeline11_c_v3",
+	"properties": {
+		"description": "- Instead of replacing the old files, move them to Archive/yyyy-mm-dd/filename_HHmmss \n- Using internal pipeline",
+		"activities": [
+			{
+				"name": "MoveToTaskMetadataLookup",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "MoveToTaskMetadata_Generic",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": {
+								"value": "@pipeline().parameters.MetaFileConainerName",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.MetaFileDirName",
+								"type": "Expression"
+							},
+							"MetaFileName": {
+								"value": "@pipeline().parameters.MetaFileName",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "CheckActionFilter",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "CheckProcessIDFilter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('CheckProcessIDFilter').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().Action, '1')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachActiveRowInMetadatafile",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "CheckActionFilter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('CheckActionFilter').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "TargetFileMetadataValidation",
+							"type": "Validation",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "MoveToTaskSourceDirectory_Generic",
+									"type": "DatasetReference",
+									"parameters": {
+										"ContainerName": {
+											"value": "@item().TargetContainer",
+											"type": "Expression"
+										},
+										"DirectoryName": {
+											"value": "@item().TargetDir",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@if( and(\n        equals(coalesce(item().TargetFile, 'null'), 'null')\n        , equals(coalesce(item().TargetType, 'null'), 'null')\n    )\n    , ''\n    , concat(item().TargetFile\n        , '.'\n        , item().TargetType\n    )\n)",
+											"type": "Expression"
+										}
+									}
+								},
+								"timeout": "0.00:00:07",
+								"sleep": 1
+							}
+						},
+						{
+							"name": "ExecuteNewCopyPipeline",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "TargetFileMetadataValidation",
+									"dependencyConditions": [
+										"Failed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "az_adls_task1_test_pipeline11_c_copydata_activity",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"ProcessID": {
+										"value": "@item().ProcessID",
+										"type": "Expression"
+									},
+									"ContainerName": {
+										"value": "@item().ContainerName",
+										"type": "Expression"
+									},
+									"SourceDir": {
+										"value": "@item().SourceDir",
+										"type": "Expression"
+									},
+									"SourceFile": {
+										"value": "@item().SourceFile",
+										"type": "Expression"
+									},
+									"SourceType": {
+										"value": "@item().SourceType",
+										"type": "Expression"
+									},
+									"TargetContainer": {
+										"value": "@item().TargetContainer",
+										"type": "Expression"
+									},
+									"TargetDir": {
+										"value": "@item().TargetDir",
+										"type": "Expression"
+									},
+									"TargetFile": {
+										"value": "@item().TargetFile",
+										"type": "Expression"
+									},
+									"TargetType": {
+										"value": "@item().TargetType",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "ExecuteUpdateCopyPipeline",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "ExecuteArchivePipeline",
+									"dependencyConditions": [
+										"Completed"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "az_adls_task1_test_pipeline11_c_copydata_activity",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"ProcessID": {
+										"value": "@item().ProcessID",
+										"type": "Expression"
+									},
+									"ContainerName": {
+										"value": "@item().ContainerName",
+										"type": "Expression"
+									},
+									"SourceDir": {
+										"value": "@item().SourceDir",
+										"type": "Expression"
+									},
+									"SourceFile": {
+										"value": "@item().SourceFile",
+										"type": "Expression"
+									},
+									"SourceType": {
+										"value": "@item().SourceType",
+										"type": "Expression"
+									},
+									"TargetContainer": {
+										"value": "@item().TargetContainer",
+										"type": "Expression"
+									},
+									"TargetDir": {
+										"value": "@item().TargetDir",
+										"type": "Expression"
+									},
+									"TargetFile": {
+										"value": "@item().TargetFile",
+										"type": "Expression"
+									},
+									"TargetType": {
+										"value": "@item().TargetType",
+										"type": "Expression"
+									}
+								}
+							}
+						},
+						{
+							"name": "ExecuteArchivePipeline",
+							"type": "ExecutePipeline",
+							"dependsOn": [
+								{
+									"activity": "TargetFileMetadataValidation",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"pipeline": {
+									"referenceName": "az_adls_task1_test_pipeline11_c_archive_activity",
+									"type": "PipelineReference"
+								},
+								"waitOnCompletion": true,
+								"parameters": {
+									"ArchiveContainer": {
+										"value": "@pipeline().parameters.ArchiveContainer",
+										"type": "Expression"
+									},
+									"TargetContainer": {
+										"value": "@item().TargetContainer",
+										"type": "Expression"
+									},
+									"TargetDir": {
+										"value": "@item().TargetDir",
+										"type": "Expression"
+									},
+									"TargetFile": {
+										"value": "@item().TargetFile",
+										"type": "Expression"
+									},
+									"TargetType": {
+										"value": "@item().TargetType",
+										"type": "Expression"
+									},
+									"SourceDir": {
+										"value": "@item().SourceDir",
+										"type": "Expression"
+									},
+									"ProcessID": {
+										"value": "@item().ProcessID",
+										"type": "Expression"
+									}
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckProcessIDFilter",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "MoveToTaskMetadataLookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MoveToTaskMetadataLookup').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@or(\n    equals(pipeline().parameters.ProcessID, null)\n    , equals(item().ProcessID, pipeline().parameters.ProcessID)\n)",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"MetaFileConainerName": {
+				"type": "string",
+				"defaultValue": "metainput"
+			},
+			"MetaFileDirName": {
+				"type": "string",
+				"defaultValue": null
+			},
+			"MetaFileName": {
+				"type": "string",
+				"defaultValue": "MoveToTaskMetadata.csv"
+			},
+			"ProcessID": {
+				"type": "string",
+				"defaultValue": null
+			},
+			"ArchiveContainer": {
+				"type": "string",
+				"defaultValue": "archive"
+			}
+		},
+		"folder": {
+			"name": "Task-1-Final/main"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-15T17:13:16Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

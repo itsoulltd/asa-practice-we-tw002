@@ -1,0 +1,291 @@
+{
+	"name": "az_adls_task1_test_pipeline9",
+	"properties": {
+		"activities": [
+			{
+				"name": "MoveToTaskMetadataLookup",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "MoveToTaskMetadata_Generic",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": {
+								"value": "@pipeline().parameters.MetaFileConainerName",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.MetaFileDirName",
+								"type": "Expression"
+							},
+							"MetaFileName": {
+								"value": "@pipeline().parameters.MetaFileName",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "CheckActionFilter",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "MoveToTaskMetadataLookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MoveToTaskMetadataLookup').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().Action, '1')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachActiveRowInMetadatafile",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "CheckActionFilter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('CheckActionFilter').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "If SourceFile Exist",
+							"type": "IfCondition",
+							"dependsOn": [
+								{
+									"activity": "GetSourceFileMetadata",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"expression": {
+									"value": "@and(\n    startswith(string(activity('GetSourceFileMetadata').output.exists), 'true')\n    , equals(item().SourceType, item().TargetType)\n)",
+									"type": "Expression"
+								},
+								"ifTrueActivities": [
+									{
+										"name": "MoveFilesSourceToTarget",
+										"type": "Copy",
+										"dependsOn": [],
+										"policy": {
+											"timeout": "0.12:00:00",
+											"retry": 0,
+											"retryIntervalInSeconds": 30,
+											"secureOutput": false,
+											"secureInput": false
+										},
+										"userProperties": [],
+										"typeProperties": {
+											"source": {
+												"type": "BinarySource",
+												"storeSettings": {
+													"type": "AzureBlobFSReadSettings",
+													"recursive": true,
+													"deleteFilesAfterCompletion": false
+												},
+												"formatSettings": {
+													"type": "BinaryReadSettings"
+												}
+											},
+											"sink": {
+												"type": "BinarySink",
+												"storeSettings": {
+													"type": "AzureBlobFSWriteSettings"
+												}
+											},
+											"enableStaging": false
+										},
+										"inputs": [
+											{
+												"referenceName": "MoveFilesFromAnySource",
+												"type": "DatasetReference",
+												"parameters": {
+													"ContainerName": {
+														"value": "@item().ContainerName",
+														"type": "Expression"
+													},
+													"DirectoryName": {
+														"value": "@item().SourceDir",
+														"type": "Expression"
+													},
+													"FileName": {
+														"value": "@concat(item().SourceFile, '.', item().SourceType)",
+														"type": "Expression"
+													}
+												}
+											}
+										],
+										"outputs": [
+											{
+												"referenceName": "MoveFilesFromAnyTarget",
+												"type": "DatasetReference",
+												"parameters": {
+													"ContainerName": {
+														"value": "@item().TargetContainer",
+														"type": "Expression"
+													},
+													"DirectoryName": {
+														"value": "@item().TargetDir",
+														"type": "Expression"
+													},
+													"FileName": {
+														"value": "@concat(item().TargetFile,'.',item().TargetType)",
+														"type": "Expression"
+													}
+												}
+											}
+										]
+									}
+								]
+							}
+						},
+						{
+							"name": "GetSourceFileMetadata",
+							"type": "GetMetadata",
+							"dependsOn": [
+								{
+									"activity": "TargetFileMetadataValidation",
+									"dependencyConditions": [
+										"Failed",
+										"Skipped"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "MoveFilesFromAnySource",
+									"type": "DatasetReference",
+									"parameters": {
+										"ContainerName": {
+											"value": "@item().ContainerName",
+											"type": "Expression"
+										},
+										"DirectoryName": {
+											"value": "@item().SourceDir",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@concat(item().SourceFile,'.',item().SourceType)",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"exists",
+									"itemName"
+								],
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "BinaryReadSettings"
+								}
+							}
+						},
+						{
+							"name": "TargetFileMetadataValidation",
+							"type": "Validation",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "MoveFilesFromAnyTarget",
+									"type": "DatasetReference",
+									"parameters": {
+										"ContainerName": {
+											"value": "@item().TargetContainer",
+											"type": "Expression"
+										},
+										"DirectoryName": {
+											"value": "@item().TargetDir",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@concat(item().TargetFile, '.', item().TargetType)",
+											"type": "Expression"
+										}
+									}
+								},
+								"timeout": "0.00:00:02",
+								"sleep": 1
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"MetaFileConainerName": {
+				"type": "string",
+				"defaultValue": "metainput"
+			},
+			"MetaFileDirName": {
+				"type": "string",
+				"defaultValue": null
+			},
+			"MetaFileName": {
+				"type": "string",
+				"defaultValue": "MoveToTaskMetadata.csv"
+			}
+		},
+		"folder": {
+			"name": "Task-1-Tests"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-15T17:12:30Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

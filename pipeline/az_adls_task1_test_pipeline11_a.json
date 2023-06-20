@@ -1,0 +1,270 @@
+{
+	"name": "az_adls_task1_test_pipeline11_a",
+	"properties": {
+		"description": "- How to copy all files from one Container/Directory to another place.\n- ProcessID as an instruction to perform a specific task, if null then execute all else just the mentioned one.\n- Refactoring some dataset naming convention.",
+		"activities": [
+			{
+				"name": "MoveToTaskMetadataLookup",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "MoveToTaskMetadata_Generic",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": {
+								"value": "@pipeline().parameters.MetaFileConainerName",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.MetaFileDirName",
+								"type": "Expression"
+							},
+							"MetaFileName": {
+								"value": "@pipeline().parameters.MetaFileName",
+								"type": "Expression"
+							}
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "CheckActionFilter",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "CheckProcessIDFilter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('CheckProcessIDFilter').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().Action, '1')",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachActiveRowInMetadatafile",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "CheckActionFilter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('CheckActionFilter').output.value",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Get Metadata1",
+							"type": "GetMetadata",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataset": {
+									"referenceName": "MoveToTaskSourceDirectory_Generic",
+									"type": "DatasetReference",
+									"parameters": {
+										"ContainerName": {
+											"value": "@item().ContainerName",
+											"type": "Expression"
+										},
+										"DirectoryName": {
+											"value": "@item().SourceDir",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@if( and(\n        equals(coalesce(item().SourceFile, 'null'), 'null')\n        , equals(coalesce(item().SourceType, 'null'), 'null')\n    )\n    , ''\n    , concat(coalesce(item().SourceFile, '*')\n        , '.'\n        , coalesce(item().SourceType, '*')\n    )\n)",
+											"type": "Expression"
+										}
+									}
+								},
+								"fieldList": [
+									"exists",
+									"itemName",
+									"itemType"
+								],
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "BinaryReadSettings"
+								}
+							}
+						},
+						{
+							"name": "MoveFilesSourceToTarget",
+							"type": "Copy",
+							"dependsOn": [
+								{
+									"activity": "Get Metadata1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.00:00:30",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "BinarySource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"deleteFilesAfterCompletion": false
+									},
+									"formatSettings": {
+										"type": "BinaryReadSettings"
+									}
+								},
+								"sink": {
+									"type": "BinarySink",
+									"storeSettings": {
+										"type": "AzureBlobFSWriteSettings"
+									}
+								},
+								"enableStaging": false
+							},
+							"inputs": [
+								{
+									"referenceName": "MoveToTaskSourceDirectory_Generic",
+									"type": "DatasetReference",
+									"parameters": {
+										"ContainerName": {
+											"value": "@item().ContainerName",
+											"type": "Expression"
+										},
+										"DirectoryName": {
+											"value": "@item().SourceDir",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@if( and(\n        equals(coalesce(item().SourceFile, 'null'), 'null')\n        , equals(coalesce(item().SourceType, 'null'), 'null')\n    )\n    , ''\n    , concat(coalesce(item().SourceFile, '*')\n        , '.'\n        , coalesce(item().SourceType, '*')\n    )\n)",
+											"type": "Expression"
+										}
+									}
+								}
+							],
+							"outputs": [
+								{
+									"referenceName": "MoveToTaskSourceDirectory_Generic",
+									"type": "DatasetReference",
+									"parameters": {
+										"ContainerName": {
+											"value": "@item().TargetContainer",
+											"type": "Expression"
+										},
+										"DirectoryName": {
+											"value": "@coalesce(\n    item().TargetDir\n    , item().SourceDir\n)",
+											"type": "Expression"
+										},
+										"FileName": {
+											"value": "@if( and(\n        equals(coalesce(item().TargetFile, 'null'), 'null')\n        , equals(coalesce(item().TargetType, 'null'), 'null')\n    )\n    , ''\n    , concat(coalesce(item().TargetFile, '*')\n        , '.'\n        , coalesce(item().TargetType, '*')\n    )\n)",
+											"type": "Expression"
+										}
+									}
+								}
+							]
+						}
+					]
+				}
+			},
+			{
+				"name": "CheckProcessIDFilter",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "MoveToTaskMetadataLookup",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('MoveToTaskMetadataLookup').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@or(\n    equals(pipeline().parameters.ProcessID, null)\n    , equals(item().ProcessID, pipeline().parameters.ProcessID)\n)",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"MetaFileConainerName": {
+				"type": "string",
+				"defaultValue": "metainput"
+			},
+			"MetaFileDirName": {
+				"type": "string",
+				"defaultValue": null
+			},
+			"MetaFileName": {
+				"type": "string",
+				"defaultValue": "MoveToTaskMetadata.csv"
+			},
+			"ProcessID": {
+				"type": "string",
+				"defaultValue": null
+			}
+		},
+		"folder": {
+			"name": "Task-1-working-prototypes"
+		},
+		"annotations": [],
+		"lastPublishTime": "2023-06-15T17:12:47Z"
+	},
+	"type": "Microsoft.Synapse/workspaces/pipelines"
+}

@@ -1,0 +1,36 @@
+{
+	"name": "az_adls_dynamic_set_Training_Dir",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "asa-practice-we-tw002-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"SubDirName": {
+				"type": "string",
+				"defaultValue": "placeholder"
+			},
+			"FileName": {
+				"type": "string",
+				"defaultValue": "simple.txt"
+			}
+		},
+		"annotations": [],
+		"type": "Binary",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().FileName",
+					"type": "Expression"
+				},
+				"folderPath": {
+					"value": "@concat('Training', '/', dataset().SubDirName)",
+					"type": "Expression"
+				},
+				"fileSystem": "training"
+			}
+		}
+	},
+	"type": "Microsoft.Synapse/workspaces/datasets"
+}
