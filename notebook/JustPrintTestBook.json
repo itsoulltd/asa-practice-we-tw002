@@ -1,0 +1,46 @@
+{
+	"name": "JustPrintTestBook",
+	"properties": {
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "46ba1c49-a7f5-4185-8347-27dbfac8215c"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "python"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"#Setting vars:\r\n",
+					"#container_name = \"data\"\r\n",
+					"#storage_account = \"dgdnastwedev\"\r\n",
+					"base_io_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net\"\r\n",
+					"print(f\"Base Path: {base_io_path}\")\r\n",
+					"print(f\"Execution Complete on {spark_pool_name}:{spark_executor_size}\")"
+				],
+				"execution_count": null
+			}
+		]
+	}
+}
