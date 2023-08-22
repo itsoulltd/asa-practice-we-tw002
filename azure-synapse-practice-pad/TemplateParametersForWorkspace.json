@@ -19,6 +19,15 @@
 		},
 		"azure-synapse-practice-pad-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"value": "https://synapsepracticepad.dfs.core.windows.net"
+		},
+		"Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Container": {
+			"value": " metadata "
+		},
+		"Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Directory": {
+			"value": " "
+		},
+		"Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Filename": {
+			"value": "Json_Metadata.json"
 		}
 	}
 }
