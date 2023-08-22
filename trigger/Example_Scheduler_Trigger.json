@@ -11,6 +11,7 @@
 				},
 				"parameters": {
 					"Container": " metadata ",
+					"Directory": " ",
 					"Filename": "Json_Metadata.json"
 				}
 			}
