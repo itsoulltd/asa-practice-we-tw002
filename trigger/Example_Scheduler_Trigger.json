@@ -1,0 +1,37 @@
+{
+	"name": "Example_Scheduler_Trigger",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "PL_Test_Read_Metadata",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"Container": " metadata ",
+					"Filename": "Json_Metadata.json"
+				}
+			}
+		],
+		"type": "ScheduleTrigger",
+		"typeProperties": {
+			"recurrence": {
+				"frequency": "Day",
+				"interval": 1,
+				"startTime": "2023-08-22T11:56:00Z",
+				"timeZone": "UTC",
+				"schedule": {
+					"minutes": [
+						30
+					],
+					"hours": [
+						1,
+						5
+					]
+				}
+			}
+		}
+	}
+}
