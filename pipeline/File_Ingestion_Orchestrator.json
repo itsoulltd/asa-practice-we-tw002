@@ -119,6 +119,89 @@
 						}
 					]
 				}
+			},
+			{
+				"name": "Archive Copy",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "Switch- Based On Type",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"enableStaging": false
+				}
+			},
+			{
+				"name": "Bronze to Silver",
+				"type": "SynapseNotebook",
+				"dependsOn": [
+					{
+						"activity": "Switch- Based On Type",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"snapshot": true
+				}
+			},
+			{
+				"name": "If Condition1",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Bronze to Silver",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@not(\n    or( equals(coalesce(activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName, 'null'), 'null')\n        , empty(activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName)\n    )\n)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Silver to Gold",
+							"type": "SynapseNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"snapshot": true
+							}
+						}
+					]
+				}
 			}
 		],
 		"parameters": {
