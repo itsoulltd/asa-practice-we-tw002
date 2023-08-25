@@ -1,0 +1,33 @@
+{
+	"name": "File_Ingestion_Orchestrator",
+	"properties": {
+		"activities": [
+			{
+				"name": "Metadata",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": []
+			}
+		],
+		"parameters": {
+			"ContainerName": {
+				"type": "string",
+				"defaultValue": "dropin"
+			},
+			"Filename": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "File Ingestion Pipeline"
+		},
+		"annotations": []
+	}
+}
