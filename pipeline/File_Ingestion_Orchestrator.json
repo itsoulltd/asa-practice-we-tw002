@@ -13,7 +13,28 @@
 					"secureOutput": false,
 					"secureInput": false
 				},
-				"userProperties": []
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Metadata_DS",
+						"type": "DatasetReference",
+						"parameters": {
+							"ContainerName": "metadata",
+							"Filename": "Metadata_File.csv"
+						}
+					}
+				}
 			}
 		],
 		"parameters": {
