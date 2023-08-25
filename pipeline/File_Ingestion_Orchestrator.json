@@ -59,6 +59,66 @@
 						"type": "Expression"
 					}
 				}
+			},
+			{
+				"name": "Switch- Based On Type",
+				"type": "Switch",
+				"dependsOn": [
+					{
+						"activity": "Filtered Metadata Row",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"on": {
+						"value": "@toUpper(\n    concat(activity('Filtered Metadata Row').output.value[0].FileType\n        , '_to_'\n        , 'parquet'\n    )\n)",
+						"type": "Expression"
+					},
+					"cases": [
+						{
+							"value": "CSV_TO_PARQUET",
+							"activities": [
+								{
+									"name": "Wait2",
+									"type": "Wait",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"waitTimeInSeconds": 1
+									}
+								}
+							]
+						},
+						{
+							"value": "XLSX_TO_PARQUET",
+							"activities": [
+								{
+									"name": "Wait3",
+									"type": "Wait",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"waitTimeInSeconds": 1
+									}
+								}
+							]
+						}
+					],
+					"defaultActivities": [
+						{
+							"name": "Wait1",
+							"type": "Wait",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": 1
+							}
+						}
+					]
+				}
 			}
 		],
 		"parameters": {
