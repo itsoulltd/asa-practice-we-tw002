@@ -20,6 +20,15 @@
 		"azure-synapse-practice-pad-WorkspaceDefaultStorage_properties_typeProperties_url": {
 			"value": "https://synapsepracticepad.dfs.core.windows.net"
 		},
+		"Csv_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_ContainerName": {
+			"value": "@trigger().outputs.body.folderPath"
+		},
+		"Csv_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_Filename": {
+			"value": "@trigger().outputs.body.fileName"
+		},
+		"Csv_Blob_Create_Event_properties_typeProperties_scope": {
+			"value": "/subscriptions/4a5fc6aa-bb98-45a3-bb67-341057206b2a/resourceGroups/AzureSynapse_PracticePad/providers/Microsoft.Storage/storageAccounts/synapsepracticepad"
+		},
 		"Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Container": {
 			"value": " metadata "
 		},
@@ -28,6 +37,15 @@
 		},
 		"Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Filename": {
 			"value": "Json_Metadata.json"
+		},
+		"Excel_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_ContainerName": {
+			"value": "@trigger().outputs.body.folderPath"
+		},
+		"Excel_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_Filename": {
+			"value": "@trigger().outputs.body.fileName"
+		},
+		"Excel_Blob_Create_Event_properties_typeProperties_scope": {
+			"value": "/subscriptions/4a5fc6aa-bb98-45a3-bb67-341057206b2a/resourceGroups/AzureSynapse_PracticePad/providers/Microsoft.Storage/storageAccounts/synapsepracticepad"
 		}
 	}
 }

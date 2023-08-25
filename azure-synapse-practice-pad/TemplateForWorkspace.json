@@ -29,6 +29,18 @@
 			"type": "string",
 			"defaultValue": "https://synapsepracticepad.dfs.core.windows.net"
 		},
+		"Csv_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_ContainerName": {
+			"type": "string",
+			"defaultValue": "@trigger().outputs.body.folderPath"
+		},
+		"Csv_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_Filename": {
+			"type": "string",
+			"defaultValue": "@trigger().outputs.body.fileName"
+		},
+		"Csv_Blob_Create_Event_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/4a5fc6aa-bb98-45a3-bb67-341057206b2a/resourceGroups/AzureSynapse_PracticePad/providers/Microsoft.Storage/storageAccounts/synapsepracticepad"
+		},
 		"Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Container": {
 			"type": "string",
 			"defaultValue": " metadata "
@@ -40,6 +52,18 @@
 		"Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Filename": {
 			"type": "string",
 			"defaultValue": "Json_Metadata.json"
+		},
+		"Excel_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_ContainerName": {
+			"type": "string",
+			"defaultValue": "@trigger().outputs.body.folderPath"
+		},
+		"Excel_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_Filename": {
+			"type": "string",
+			"defaultValue": "@trigger().outputs.body.fileName"
+		},
+		"Excel_Blob_Create_Event_properties_typeProperties_scope": {
+			"type": "string",
+			"defaultValue": "/subscriptions/4a5fc6aa-bb98-45a3-bb67-341057206b2a/resourceGroups/AzureSynapse_PracticePad/providers/Microsoft.Storage/storageAccounts/synapsepracticepad"
 		}
 	},
 	"variables": {
@@ -124,6 +148,536 @@
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/datasets/asa_adls_SourceData_YellowTrip')]",
 				"[concat(variables('workspaceId'), '/datasets/asa_adls_RenderedData_YellowTrip')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/File_Ingestion_Orchestrator')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Metadata",
+						"type": "Lookup",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "DelimitedTextSource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"enablePartitionDiscovery": false
+								},
+								"formatSettings": {
+									"type": "DelimitedTextReadSettings"
+								}
+							},
+							"dataset": {
+								"referenceName": "Metadata_DS",
+								"type": "DatasetReference",
+								"parameters": {
+									"ContainerName": "metadata",
+									"Filename": "Metadata_File_v2.csv"
+								}
+							},
+							"firstRowOnly": false
+						}
+					},
+					{
+						"name": "Filtered Metadata Row",
+						"type": "Filter",
+						"dependsOn": [
+							{
+								"activity": "Metadata",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"items": {
+								"value": "@activity('Metadata').output.value",
+								"type": "Expression"
+							},
+							"condition": {
+								"value": "@equals(item().FileName, pipeline().parameters.Filename)",
+								"type": "Expression"
+							}
+						}
+					},
+					{
+						"name": "Switch- Based On Type",
+						"type": "Switch",
+						"dependsOn": [
+							{
+								"activity": "Filtered Metadata Row",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"on": {
+								"value": "@toUpper(\n    concat(activity('Filtered Metadata Row').output.value[0].FileType\n        , '_to_'\n        , 'parquet'\n    )\n)",
+								"type": "Expression"
+							},
+							"cases": [
+								{
+									"value": "CSV_TO_PARQUET",
+									"activities": [
+										{
+											"name": "Copy From Bronze- Csv To Parquet",
+											"type": "Copy",
+											"dependsOn": [],
+											"policy": {
+												"timeout": "0.12:00:00",
+												"retry": 0,
+												"retryIntervalInSeconds": 30,
+												"secureOutput": false,
+												"secureInput": false
+											},
+											"userProperties": [],
+											"typeProperties": {
+												"source": {
+													"type": "DelimitedTextSource",
+													"storeSettings": {
+														"type": "AzureBlobFSReadSettings",
+														"recursive": true,
+														"enablePartitionDiscovery": false
+													},
+													"formatSettings": {
+														"type": "DelimitedTextReadSettings"
+													}
+												},
+												"sink": {
+													"type": "ParquetSink",
+													"storeSettings": {
+														"type": "AzureBlobFSWriteSettings"
+													},
+													"formatSettings": {
+														"type": "ParquetWriteSettings"
+													}
+												},
+												"enableStaging": false,
+												"translator": {
+													"type": "TabularTranslator",
+													"typeConversion": true,
+													"typeConversionSettings": {
+														"allowDataTruncation": true,
+														"treatBooleanAsNumber": false
+													}
+												}
+											},
+											"inputs": [
+												{
+													"referenceName": "DS_ADLS_Csv",
+													"type": "DatasetReference",
+													"parameters": {
+														"Container": {
+															"value": "@activity('Filtered Metadata Row').output.value[0].InputContainer",
+															"type": "Expression"
+														},
+														"Filename": {
+															"value": "@activity('Filtered Metadata Row').output.value[0].FileName",
+															"type": "Expression"
+														},
+														"Delimiter": {
+															"value": "@activity('Filtered Metadata Row').output.value[0].Delimiter",
+															"type": "Expression"
+														}
+													}
+												}
+											],
+											"outputs": [
+												{
+													"referenceName": "DS_ADLS_Parquet",
+													"type": "DatasetReference",
+													"parameters": {
+														"Container": {
+															"value": "@activity('Filtered Metadata Row').output.value[0].TargetContainer",
+															"type": "Expression"
+														},
+														"Directory": {
+															"value": "@concat(activity('Filtered Metadata Row').output.value[0].BronzeFolder\n    , '/'\n    , activity('Filtered Metadata Row').output.value[0].Source\n    , '/'\n    , replace(activity('Filtered Metadata Row').output.value[0].FileName\n        , concat('.', activity('Filtered Metadata Row').output.value[0].FileType)\n        , ''\n    )\n)",
+															"type": "Expression"
+														},
+														"Filename": {
+															"value": "@concat(\n    replace(activity('Filtered Metadata Row').output.value[0].FileName\n        , activity('Filtered Metadata Row').output.value[0].FileType\n        , ''\n    )\n    , 'parquet'\n)",
+															"type": "Expression"
+														}
+													}
+												}
+											]
+										}
+									]
+								},
+								{
+									"value": "XLSX_TO_PARQUET",
+									"activities": [
+										{
+											"name": "Copy From Bronze- Excel To Parquet",
+											"type": "Copy",
+											"dependsOn": [],
+											"policy": {
+												"timeout": "0.12:00:00",
+												"retry": 0,
+												"retryIntervalInSeconds": 30,
+												"secureOutput": false,
+												"secureInput": false
+											},
+											"userProperties": [],
+											"typeProperties": {
+												"source": {
+													"type": "ExcelSource",
+													"storeSettings": {
+														"type": "AzureBlobFSReadSettings",
+														"recursive": true,
+														"enablePartitionDiscovery": false
+													}
+												},
+												"sink": {
+													"type": "ParquetSink",
+													"storeSettings": {
+														"type": "AzureBlobFSWriteSettings"
+													},
+													"formatSettings": {
+														"type": "ParquetWriteSettings"
+													}
+												},
+												"enableStaging": false,
+												"translator": {
+													"type": "TabularTranslator",
+													"typeConversion": true,
+													"typeConversionSettings": {
+														"allowDataTruncation": true,
+														"treatBooleanAsNumber": false
+													}
+												}
+											},
+											"inputs": [
+												{
+													"referenceName": "DS_ADLS_Excel",
+													"type": "DatasetReference",
+													"parameters": {
+														"Container": {
+															"value": "@activity('Filtered Metadata Row').output.value[0].InputContainer",
+															"type": "Expression"
+														},
+														"Filename": {
+															"value": "@activity('Filtered Metadata Row').output.value[0].FileName",
+															"type": "Expression"
+														},
+														"SheetIndex": {
+															"value": "@activity('Filtered Metadata Row').output.value[0].SheetIndex",
+															"type": "Expression"
+														}
+													}
+												}
+											],
+											"outputs": [
+												{
+													"referenceName": "DS_ADLS_Parquet",
+													"type": "DatasetReference",
+													"parameters": {
+														"Container": {
+															"value": "@activity('Filtered Metadata Row').output.value[0].TargetContainer",
+															"type": "Expression"
+														},
+														"Directory": {
+															"value": "@concat(activity('Filtered Metadata Row').output.value[0].BronzeFolder\n    , '/'\n    , activity('Filtered Metadata Row').output.value[0].Source\n    , '/'\n    , replace(activity('Filtered Metadata Row').output.value[0].FileName\n        , concat('.', activity('Filtered Metadata Row').output.value[0].FileType)\n        , ''\n    )\n)",
+															"type": "Expression"
+														},
+														"Filename": {
+															"value": "@concat(\n    replace(activity('Filtered Metadata Row').output.value[0].FileName\n        , activity('Filtered Metadata Row').output.value[0].FileType\n        , ''\n    )\n    , 'parquet'\n)",
+															"type": "Expression"
+														}
+													}
+												}
+											]
+										}
+									]
+								}
+							],
+							"defaultActivities": [
+								{
+									"name": "Wait1",
+									"type": "Wait",
+									"dependsOn": [],
+									"userProperties": [],
+									"typeProperties": {
+										"waitTimeInSeconds": 1
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Archive Copy",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "Switch- Based On Type",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "BinarySource",
+								"storeSettings": {
+									"type": "AzureBlobFSReadSettings",
+									"recursive": true,
+									"deleteFilesAfterCompletion": true
+								},
+								"formatSettings": {
+									"type": "BinaryReadSettings"
+								}
+							},
+							"sink": {
+								"type": "BinarySink",
+								"storeSettings": {
+									"type": "AzureBlobFSWriteSettings"
+								}
+							},
+							"enableStaging": false
+						},
+						"inputs": [
+							{
+								"referenceName": "DS_ADLS_DropIn_Archieve",
+								"type": "DatasetReference",
+								"parameters": {
+									"ContainerName": {
+										"value": "@pipeline().parameters.ContainerName",
+										"type": "Expression"
+									},
+									"Filename": {
+										"value": "@pipeline().parameters.Filename",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "DS_ADLS_DropIn_Archieve",
+								"type": "DatasetReference",
+								"parameters": {
+									"ContainerName": {
+										"value": "@concat(activity('Filtered Metadata Row').output.Value[0].ArchiveContainer\n    , '/'\n    , activity('Filtered Metadata Row').output.Value[0].BronzeFolder\n    , '/'\n    , activity('Filtered Metadata Row').output.Value[0].Source\n)",
+										"type": "Expression"
+									},
+									"Filename": {
+										"value": "@concat(\n    replace(pipeline().parameters.Filename\n        , activity('Filtered Metadata Row').output.Value[0].FileType\n        , ''\n    )\n    , '/'\n    , formatDateTime(pipeline().TriggerTime, 'yyyy-MM-dd-HH-mm')\n    , '_'\n    , activity('Filtered Metadata Row').output.Value[0].FileName\n)\n\n",
+										"type": "Expression"
+									}
+								}
+							}
+						]
+					},
+					{
+						"name": "If Condition1",
+						"type": "IfCondition",
+						"dependsOn": [
+							{
+								"activity": "Bronze To Silver",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"userProperties": [],
+						"typeProperties": {
+							"expression": {
+								"value": "@not(\n    or( equals(coalesce(activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName, 'null'), 'null')\n        , empty(activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName)\n    )\n)",
+								"type": "Expression"
+							},
+							"ifTrueActivities": [
+								{
+									"name": "Silver To Gold",
+									"type": "SynapseNotebook",
+									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
+									"userProperties": [],
+									"typeProperties": {
+										"notebook": {
+											"referenceName": {
+												"value": "@activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName",
+												"type": "Expression"
+											},
+											"type": "NotebookReference"
+										},
+										"parameters": {
+											"StorageAccount": {
+												"value": {
+													"value": "@activity('Filtered Metadata Row').output.Value[0].StorageAccount",
+													"type": "Expression"
+												},
+												"type": "string"
+											},
+											"TargetContainer": {
+												"value": {
+													"value": "@activity('Filtered Metadata Row').output.Value[0].TargetContainer",
+													"type": "Expression"
+												},
+												"type": "string"
+											},
+											"Path": {
+												"value": {
+													"value": "@activity('Filtered Metadata Row').output.Value[0].SilverDeltaPath",
+													"type": "Expression"
+												},
+												"type": "string"
+											},
+											"GoldDeltaPath": {
+												"value": {
+													"value": "@activity('Filtered Metadata Row').output.Value[0].GoldDeltaPath",
+													"type": "Expression"
+												},
+												"type": "string"
+											}
+										},
+										"snapshot": true,
+										"sparkPool": {
+											"referenceName": {
+												"value": "@activity('Filtered Metadata Row').output.Value[0].SparkPoolName",
+												"type": "Expression"
+											},
+											"type": "BigDataPoolReference"
+										},
+										"conf": {
+											"spark.dynamicAllocation.enabled": null,
+											"spark.dynamicAllocation.minExecutors": null,
+											"spark.dynamicAllocation.maxExecutors": null
+										},
+										"numExecutors": null
+									}
+								}
+							]
+						}
+					},
+					{
+						"name": "Bronze To Silver",
+						"type": "SynapseNotebook",
+						"dependsOn": [
+							{
+								"activity": "Switch- Based On Type",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebook": {
+								"referenceName": {
+									"value": "@activity('Filtered Metadata Row').output.Value[0].SilverNotebookName",
+									"type": "Expression"
+								},
+								"type": "NotebookReference"
+							},
+							"parameters": {
+								"StorageAccount": {
+									"value": {
+										"value": "@activity('Filtered Metadata Row').output.Value[0].StorageAccount",
+										"type": "Expression"
+									},
+									"type": "string"
+								},
+								"TargetContainer": {
+									"value": {
+										"value": "@activity('Filtered Metadata Row').output.Value[0].TargetContainer",
+										"type": "Expression"
+									},
+									"type": "string"
+								},
+								"Path": {
+									"value": {
+										"value": "@concat(activity('Filtered Metadata Row').output.Value[0].BronzeFolder\n    , '/'\n    , activity('Filtered Metadata Row').output.Value[0].Source\n    , '/'\n    , replace(pipeline().parameters.FileName\n        , concat('.', activity('Filtered Metadata Row').output.Value[0].FileType)\n        , ''\n    )\n    , '/'\n    , replace(pipeline().parameters.FileName\n        , activity('Filtered Metadata Row').output.Value[0].FileType\n        , 'parquet'\n    )\n)",
+										"type": "Expression"
+									},
+									"type": "string"
+								},
+								"SilverDeltaPath": {
+									"value": {
+										"value": "@activity('Filtered Metadata Row').output.Value[0].SilverDeltaPath",
+										"type": "Expression"
+									},
+									"type": "string"
+								}
+							},
+							"snapshot": true,
+							"sparkPool": {
+								"referenceName": {
+									"value": "@activity('Filtered Metadata Row').output.Value[0].SparkPoolName",
+									"type": "Expression"
+								},
+								"type": "BigDataPoolReference"
+							},
+							"conf": {
+								"spark.dynamicAllocation.enabled": null,
+								"spark.dynamicAllocation.minExecutors": null,
+								"spark.dynamicAllocation.maxExecutors": null
+							},
+							"numExecutors": null
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {},
+					"cancelAfter": {}
+				},
+				"parameters": {
+					"ContainerName": {
+						"type": "string",
+						"defaultValue": "dropin"
+					},
+					"Filename": {
+						"type": "string"
+					}
+				},
+				"folder": {
+					"name": "File Ingestion Pipeline"
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/Metadata_DS')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_DropIn_Archieve')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_Csv')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_Parquet')]",
+				"[concat(variables('workspaceId'), '/datasets/DS_ADLS_Excel')]"
 			]
 		},
 		{
@@ -5427,6 +5981,185 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_Csv')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "azure-synapse-practice-pad-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Container": {
+						"type": "string"
+					},
+					"Filename": {
+						"type": "string"
+					},
+					"Delimiter": {
+						"type": "string",
+						"defaultValue": ","
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().Filename",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().Container",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": {
+						"value": "@dataset().Delimiter",
+						"type": "Expression"
+					},
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/azure-synapse-practice-pad-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_DropIn_Archieve')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "azure-synapse-practice-pad-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"ContainerName": {
+						"type": "string"
+					},
+					"Filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Binary",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().Filename",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().ContainerName",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/azure-synapse-practice-pad-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_Excel')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "azure-synapse-practice-pad-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Container": {
+						"type": "string"
+					},
+					"Filename": {
+						"type": "string"
+					},
+					"SheetIndex": {
+						"type": "int",
+						"defaultValue": 1
+					}
+				},
+				"annotations": [],
+				"type": "Excel",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().Filename",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().Container",
+							"type": "Expression"
+						}
+					},
+					"sheetIndex": {
+						"value": "@dataset().SheetIndex",
+						"type": "Expression"
+					},
+					"firstRowAsHeader": true
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/azure-synapse-practice-pad-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DS_ADLS_Parquet')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "azure-synapse-practice-pad-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"Container": {
+						"type": "string"
+					},
+					"Directory": {
+						"type": "string"
+					},
+					"Filename": {
+						"type": "string"
+					}
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().Filename",
+							"type": "Expression"
+						},
+						"folderPath": {
+							"value": "@dataset().Directory",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().Container",
+							"type": "Expression"
+						}
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/azure-synapse-practice-pad-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/GetAllManufacturersJsonWriter')]",
 			"type": "Microsoft.Synapse/workspaces/datasets",
 			"apiVersion": "2019-06-01-preview",
@@ -5538,6 +6271,50 @@
 					}
 				},
 				"schema": {}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/azure-synapse-practice-pad-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Metadata_DS')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "azure-synapse-practice-pad-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"parameters": {
+					"ContainerName": {
+						"type": "string",
+						"defaultValue": "metadata"
+					},
+					"Filename": {
+						"type": "string",
+						"defaultValue": "Metadata_File.csv"
+					}
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"fileName": {
+							"value": "@dataset().Filename",
+							"type": "Expression"
+						},
+						"fileSystem": {
+							"value": "@dataset().ContainerName",
+							"type": "Expression"
+						}
+					},
+					"columnDelimiter": ";",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": []
 			},
 			"dependsOn": [
 				"[concat(variables('workspaceId'), '/linkedServices/azure-synapse-practice-pad-WorkspaceDefaultStorage')]"
@@ -6374,6 +7151,116 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/Csv_Blob_Create_Event')]",
+			"type": "Microsoft.Synapse/workspaces/triggers",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "File_Ingestion_Orchestrator",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"ContainerName": "[parameters('Csv_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_ContainerName')]",
+							"Filename": "[parameters('Csv_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_Filename')]"
+						}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/dropin/blobs/",
+					"blobPathEndsWith": "csv",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('Csv_Blob_Create_Event_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/File_Ingestion_Orchestrator')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Example_Scheduler_Trigger')]",
+			"type": "Microsoft.Synapse/workspaces/triggers",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "PL_Test_Read_Metadata",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"Container": "[parameters('Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Container')]",
+							"Directory": "[parameters('Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Directory')]",
+							"Filename": "[parameters('Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Filename')]"
+						}
+					}
+				],
+				"type": "ScheduleTrigger",
+				"typeProperties": {
+					"recurrence": {
+						"frequency": "Day",
+						"interval": 1,
+						"startTime": "2023-08-22T11:56:00Z",
+						"timeZone": "UTC",
+						"schedule": {
+							"minutes": [
+								30
+							],
+							"hours": [
+								1
+							]
+						}
+					}
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/PL_Test_Read_Metadata')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/Excel_Blob_Create_Event')]",
+			"type": "Microsoft.Synapse/workspaces/triggers",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"runtimeState": "Stopped",
+				"pipelines": [
+					{
+						"pipelineReference": {
+							"referenceName": "File_Ingestion_Orchestrator",
+							"type": "PipelineReference"
+						},
+						"parameters": {
+							"ContainerName": "[parameters('Excel_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_ContainerName')]",
+							"Filename": "[parameters('Excel_Blob_Create_Event_properties_File_Ingestion_Orchestrator_parameters_Filename')]"
+						}
+					}
+				],
+				"type": "BlobEventsTrigger",
+				"typeProperties": {
+					"blobPathBeginsWith": "/dropin/blobs/",
+					"blobPathEndsWith": "xlsx",
+					"ignoreEmptyBlobs": true,
+					"scope": "[parameters('Excel_Blob_Create_Event_properties_typeProperties_scope')]",
+					"events": [
+						"Microsoft.Storage.BlobCreated"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/pipelines/File_Ingestion_Orchestrator')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
 			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
 			"apiVersion": "2019-06-01-preview",
@@ -6459,6 +7346,144 @@
 					"resultLimit": 5000
 				},
 				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/BronzeToSilverNotebook')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "7704189d-0ddc-481d-b9b6-bab5bccd920b"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"from pyspark.sql.functions import *"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"#StorageAccount = \"dgdnastwedev\"\r\n",
+							"#TargetContainer = \"data\"\r\n",
+							"#Path = 'Bronze/PDW/PDW_Journal_Database_Codes.parquet'\r\n",
+							"#SilverDeltaPath= \"Silver/PDW/PDW_Database_Journal_Codes\"\r\n",
+							"ReadPath  = 'abfss://' + TargetContainer + '@' + StorageAccount + '.dfs.core.windows.net/' + Path\r\n",
+							"WritePath =  'abfss://' + TargetContainer + '@' + StorageAccount + '.dfs.core.windows.net/' + SilverDeltaPath"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"df = spark.read.parquet(ReadPath)\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"#Cleansing - Clean unwanted spaces.\r\n",
+							"\r\n",
+							"for column in df.columns:\r\n",
+							"        df = df.withColumn(column, rtrim(ltrim(col(column))))\r\n",
+							"\r\n",
+							"# Remove any null rows\r\n",
+							"df = df.dropna()\r\n",
+							"\r\n",
+							"# Remove duplicate records if any\r\n",
+							"df = df.dropDuplicates()"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"#Write to SilverDeltaPath\r\n",
+							"print(WritePath)\r\n",
+							"df.write.format('delta').option('overwriteSchema', 'true').mode('overwrite').save(WritePath)"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
 			},
 			"dependsOn": []
 		},
@@ -7032,6 +8057,116 @@
 			"dependsOn": []
 		},
 		{
+			"name": "[concat(parameters('workspaceName'), '/SilverToGoldNotebook')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "dda2ea2d-54d0-411a-b71d-56d27712e088"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "python"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"from pyspark.sql.functions import *"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"#StorageAccount = \"dgdnastwedev\"\r\n",
+							"#TargetContainer = \"data\"\r\n",
+							"#Path = 'Bronze/PDW/PDW_Journal_Database_Codes.parquet'\r\n",
+							"#GoldDeltaPath= \"Gold/PDW/PDW_Database_Journal_Codes\"\r\n",
+							"ReadPath  = 'abfss://' + TargetContainer + '@' + StorageAccount + '.dfs.core.windows.net/' + Path\r\n",
+							"WritePath  = 'abfss://' + TargetContainer + '@' + StorageAccount + '.dfs.core.windows.net/' + GoldDeltaPath"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"df = spark.read.format(\"delta\").load(ReadPath)\r\n",
+							"print(df)"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"#Write to SilverDeltaPath\r\n",
+							"print(WritePath)\r\n",
+							"df.write.format('delta').option('overwriteSchema', 'true').mode('overwrite').save(WritePath)"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
 			"name": "[concat(parameters('workspaceName'), '/notebook_task1_test_pipeline4')]",
 			"type": "Microsoft.Synapse/workspaces/notebooks",
 			"apiVersion": "2019-06-01-preview",
@@ -7532,46 +8667,29 @@
 			"dependsOn": []
 		},
 		{
-			"name": "[concat(parameters('workspaceName'), '/Example_Scheduler_Trigger')]",
-			"type": "Microsoft.Synapse/workspaces/triggers",
+			"name": "[concat(parameters('workspaceName'), '/sparkpoolsmall')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
 			"apiVersion": "2019-06-01-preview",
 			"properties": {
-				"annotations": [],
-				"runtimeState": "Stopped",
-				"pipelines": [
-					{
-						"pipelineReference": {
-							"referenceName": "PL_Test_Read_Metadata",
-							"type": "PipelineReference"
-						},
-						"parameters": {
-							"Container": "[parameters('Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Container')]",
-							"Directory": "[parameters('Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Directory')]",
-							"Filename": "[parameters('Example_Scheduler_Trigger_properties_PL_Test_Read_Metadata_parameters_Filename')]"
-						}
-					}
-				],
-				"type": "ScheduleTrigger",
-				"typeProperties": {
-					"recurrence": {
-						"frequency": "Day",
-						"interval": 1,
-						"startTime": "2023-08-22T11:56:00Z",
-						"timeZone": "UTC",
-						"schedule": {
-							"minutes": [
-								30
-							],
-							"hours": [
-								1
-							]
-						}
-					}
-				}
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 5
+				},
+				"autoScale": {
+					"enabled": true,
+					"maxNodeCount": 3,
+					"minNodeCount": 3
+				},
+				"nodeCount": 10,
+				"nodeSize": "Small",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.3",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": false,
+				"annotations": []
 			},
-			"dependsOn": [
-				"[concat(variables('workspaceId'), '/pipelines/PL_Test_Read_Metadata')]"
-			]
+			"dependsOn": [],
+			"location": "northeurope"
 		}
 	]
 }
