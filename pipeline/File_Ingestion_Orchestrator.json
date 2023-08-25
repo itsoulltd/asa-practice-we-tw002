@@ -31,7 +31,7 @@
 						"type": "DatasetReference",
 						"parameters": {
 							"ContainerName": "metadata",
-							"Filename": "Metadata_File.csv"
+							"Filename": "Metadata_File_v2.csv"
 						}
 					},
 					"firstRowOnly": false
