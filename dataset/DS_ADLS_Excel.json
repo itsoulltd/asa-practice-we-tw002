@@ -1,0 +1,42 @@
+{
+	"name": "DS_ADLS_Excel",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "azure-synapse-practice-pad-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"parameters": {
+			"Container": {
+				"type": "string"
+			},
+			"Filename": {
+				"type": "string"
+			},
+			"SheetIndex": {
+				"type": "int",
+				"defaultValue": 1
+			}
+		},
+		"annotations": [],
+		"type": "Excel",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"fileName": {
+					"value": "@dataset().Filename",
+					"type": "Expression"
+				},
+				"fileSystem": {
+					"value": "@dataset().Container",
+					"type": "Expression"
+				}
+			},
+			"sheetIndex": {
+				"value": "@dataset().SheetIndex",
+				"type": "Expression"
+			},
+			"firstRowAsHeader": true
+		},
+		"schema": []
+	}
+}
