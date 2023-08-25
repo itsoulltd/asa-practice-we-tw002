@@ -10,9 +10,6 @@
 				"type": "string",
 				"defaultValue": "metadata"
 			},
-			"Directory": {
-				"type": "string"
-			},
 			"Filename": {
 				"type": "string",
 				"defaultValue": "Metadata_File.csv"
