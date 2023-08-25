@@ -2,7 +2,7 @@
 	"name": "Csv_Blob_Create_Event",
 	"properties": {
 		"annotations": [],
-		"runtimeState": "Stopped",
+		"runtimeState": "Started",
 		"pipelines": [
 			{
 				"pipelineReference": {
