@@ -171,13 +171,85 @@
 							"value": "XLSX_TO_PARQUET",
 							"activities": [
 								{
-									"name": "Wait3",
-									"type": "Wait",
+									"name": "Copy From Bronze- Excel To Parquet",
+									"type": "Copy",
 									"dependsOn": [],
+									"policy": {
+										"timeout": "0.12:00:00",
+										"retry": 0,
+										"retryIntervalInSeconds": 30,
+										"secureOutput": false,
+										"secureInput": false
+									},
 									"userProperties": [],
 									"typeProperties": {
-										"waitTimeInSeconds": 1
-									}
+										"source": {
+											"type": "ExcelSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											}
+										},
+										"sink": {
+											"type": "ParquetSink",
+											"storeSettings": {
+												"type": "AzureBlobFSWriteSettings"
+											},
+											"formatSettings": {
+												"type": "ParquetWriteSettings"
+											}
+										},
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
+									},
+									"inputs": [
+										{
+											"referenceName": "DS_ADLS_Excel",
+											"type": "DatasetReference",
+											"parameters": {
+												"Container": {
+													"value": "@activity('Filtered Metadata Row').output.value[0].InputContainer",
+													"type": "Expression"
+												},
+												"Filename": {
+													"value": "@activity('Filtered Metadata Row').output.value[0].FileName",
+													"type": "Expression"
+												},
+												"SheetIndex": {
+													"value": "@activity('Filtered Metadata Row').output.value[0].SheetIndex",
+													"type": "Expression"
+												}
+											}
+										}
+									],
+									"outputs": [
+										{
+											"referenceName": "DS_ADLS_Parquet",
+											"type": "DatasetReference",
+											"parameters": {
+												"Container": {
+													"value": "@activity('Filtered Metadata Row').output.value[0].TargetContainer",
+													"type": "Expression"
+												},
+												"Directory": {
+													"value": "@concat(activity('Filtered Metadata Row').output.value[0].BronzeFolder\n    , '/'\n    , activity('Filtered Metadata Row').output.value[0].Source\n    , '/'\n    , replace(activity('Filtered Metadata Row').output.value[0].FileName\n        , concat('.', activity('Filtered Metadata Row').output.value[0].FileType)\n        , ''\n    )\n)",
+													"type": "Expression"
+												},
+												"Filename": {
+													"value": "@concat(\n    replace(activity('Filtered Metadata Row').output.value[0].FileName\n        , activity('Filtered Metadata Row').output.value[0].FileType\n        , ''\n    )\n    , 'parquet'\n)",
+													"type": "Expression"
+												}
+											}
+										}
+									]
 								}
 							]
 						}
