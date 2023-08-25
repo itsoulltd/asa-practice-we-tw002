@@ -1,0 +1,29 @@
+{
+	"name": "Excel_Blob_Create_Event",
+	"properties": {
+		"annotations": [],
+		"runtimeState": "Stopped",
+		"pipelines": [
+			{
+				"pipelineReference": {
+					"referenceName": "File_Ingestion_Orchestrator",
+					"type": "PipelineReference"
+				},
+				"parameters": {
+					"ContainerName": "@trigger().outputs.body.folderPath",
+					"Filename": "@trigger().outputs.body.fileName"
+				}
+			}
+		],
+		"type": "BlobEventsTrigger",
+		"typeProperties": {
+			"blobPathBeginsWith": "/dropin/blobs/",
+			"blobPathEndsWith": "xlsx",
+			"ignoreEmptyBlobs": true,
+			"scope": "/subscriptions/4a5fc6aa-bb98-45a3-bb67-341057206b2a/resourceGroups/AzureSynapse_PracticePad/providers/Microsoft.Storage/storageAccounts/synapsepracticepad",
+			"events": [
+				"Microsoft.Storage.BlobCreated"
+			]
+		}
+	}
+}
