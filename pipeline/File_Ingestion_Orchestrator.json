@@ -33,6 +33,30 @@
 							"ContainerName": "metadata",
 							"Filename": "Metadata_File.csv"
 						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Filtered Metadata Row",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Metadata').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@equals(item().FileName, pipeline().parameters.Filename)",
+						"type": "Expression"
 					}
 				}
 			}
