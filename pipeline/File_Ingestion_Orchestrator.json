@@ -94,6 +94,17 @@
 									},
 									"userProperties": [],
 									"typeProperties": {
+										"source": {
+											"type": "DelimitedTextSource",
+											"storeSettings": {
+												"type": "AzureBlobFSReadSettings",
+												"recursive": true,
+												"enablePartitionDiscovery": false
+											},
+											"formatSettings": {
+												"type": "DelimitedTextReadSettings"
+											}
+										},
 										"sink": {
 											"type": "ParquetSink",
 											"storeSettings": {
@@ -103,8 +114,36 @@
 												"type": "ParquetWriteSettings"
 											}
 										},
-										"enableStaging": false
+										"enableStaging": false,
+										"translator": {
+											"type": "TabularTranslator",
+											"typeConversion": true,
+											"typeConversionSettings": {
+												"allowDataTruncation": true,
+												"treatBooleanAsNumber": false
+											}
+										}
 									},
+									"inputs": [
+										{
+											"referenceName": "DS_ADLS_Csv",
+											"type": "DatasetReference",
+											"parameters": {
+												"Container": {
+													"value": "@activity('Filtered Metadata Row').output.value[0].InputContainer",
+													"type": "Expression"
+												},
+												"Filename": {
+													"value": "@activity('Filtered Metadata Row').output.value[0].FileName",
+													"type": "Expression"
+												},
+												"Delimiter": {
+													"value": "@activity('Filtered Metadata Row').output.value[0].Delimiter",
+													"type": "Expression"
+												}
+											}
+										}
+									],
 									"outputs": [
 										{
 											"referenceName": "DS_ADLS_Parquet",
