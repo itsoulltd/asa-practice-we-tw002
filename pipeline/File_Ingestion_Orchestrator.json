@@ -167,6 +167,10 @@
 							"ContainerName": {
 								"value": "@pipeline().parameters.ContainerName",
 								"type": "Expression"
+							},
+							"Filename": {
+								"value": "@pipeline().parameters.Filename",
+								"type": "Expression"
 							}
 						}
 					}
@@ -174,68 +178,30 @@
 				"outputs": [
 					{
 						"referenceName": "DS_ADLS_DropIn_Archieve",
-						"type": "DatasetReference"
+						"type": "DatasetReference",
+						"parameters": {
+							"ContainerName": {
+								"value": "@concat(activity('Filtered Metadata Row').output.Value[0].ArchiveContainer\n    , '/'\n    , activity('Filtered Metadata Row').output.Value[0].BronzeFolder\n    , '/'\n    , activity('Filtered Metadata Row').output.Value[0].Source\n)",
+								"type": "Expression"
+							},
+							"Filename": {
+								"value": "@concat(\n    replace(pipeline().parameters.Filename\n        , activity('Filtered Metadata Row').output.Value[0].FileType\n        , ''\n    )\n    , '/'\n    , formatDateTime(pipeline().TriggerTime, 'yyyy-MM-dd-HH-mm')\n    , '_'\n    , activity('Filtered Metadata Row').output.Value[0].FileName\n)\n\n",
+								"type": "Expression"
+							}
+						}
 					}
 				]
 			},
 			{
-				"name": "Bronze to Silver",
-				"type": "SynapseNotebook",
-				"dependsOn": [
-					{
-						"activity": "Switch- Based On Type",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
-				"policy": {
-					"timeout": "0.12:00:00",
-					"retry": 0,
-					"retryIntervalInSeconds": 30,
-					"secureOutput": false,
-					"secureInput": false
-				},
-				"userProperties": [],
-				"typeProperties": {
-					"snapshot": true
-				}
-			},
-			{
 				"name": "If Condition1",
 				"type": "IfCondition",
-				"dependsOn": [
-					{
-						"activity": "Bronze to Silver",
-						"dependencyConditions": [
-							"Succeeded"
-						]
-					}
-				],
+				"dependsOn": [],
 				"userProperties": [],
 				"typeProperties": {
 					"expression": {
 						"value": "@not(\n    or( equals(coalesce(activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName, 'null'), 'null')\n        , empty(activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName)\n    )\n)",
 						"type": "Expression"
-					},
-					"ifTrueActivities": [
-						{
-							"name": "Silver to Gold",
-							"type": "SynapseNotebook",
-							"dependsOn": [],
-							"policy": {
-								"timeout": "0.12:00:00",
-								"retry": 0,
-								"retryIntervalInSeconds": 30,
-								"secureOutput": false,
-								"secureInput": false
-							},
-							"userProperties": [],
-							"typeProperties": {
-								"snapshot": true
-							}
-						}
-					]
+					}
 				}
 			}
 		],
