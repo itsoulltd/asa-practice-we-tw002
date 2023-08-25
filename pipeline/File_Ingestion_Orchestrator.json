@@ -195,12 +195,148 @@
 			{
 				"name": "If Condition1",
 				"type": "IfCondition",
-				"dependsOn": [],
+				"dependsOn": [
+					{
+						"activity": "Bronze To Silver",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
 				"userProperties": [],
 				"typeProperties": {
 					"expression": {
 						"value": "@not(\n    or( equals(coalesce(activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName, 'null'), 'null')\n        , empty(activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName)\n    )\n)",
 						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Silver To Gold",
+							"type": "SynapseNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebook": {
+									"referenceName": {
+										"value": "@activity('Filtered Metadata Row').output.Value[0].GoldNoteBookName",
+										"type": "Expression"
+									},
+									"type": "NotebookReference"
+								},
+								"parameters": {
+									"StorageAccount": {
+										"value": {
+											"value": "@activity('Filtered Metadata Row').output.Value[0].StorageAccount",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"TargetContainer": {
+										"value": {
+											"value": "@activity('Filtered Metadata Row').output.Value[0].TargetContainer",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"Path": {
+										"value": {
+											"value": "@activity('Filtered Metadata Row').output.Value[0].SilverDeltaPath",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"GoldDeltaPath": {
+										"value": {
+											"value": "@activity('Filtered Metadata Row').output.Value[0].GoldDeltaPath",
+											"type": "Expression"
+										},
+										"type": "string"
+									}
+								},
+								"snapshot": true,
+								"sparkPool": {
+									"referenceName": {
+										"value": "@activity('Filtered Metadata Row').output.Value[0].SparkPoolName",
+										"type": "Expression"
+									},
+									"type": "BigDataPoolReference"
+								}
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Bronze To Silver",
+				"type": "SynapseNotebook",
+				"dependsOn": [
+					{
+						"activity": "Switch- Based On Type",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"notebook": {
+						"referenceName": {
+							"value": "@activity('Filtered Metadata Row').output.Value[0].SilverNotebookName",
+							"type": "Expression"
+						},
+						"type": "NotebookReference"
+					},
+					"parameters": {
+						"StorageAccount": {
+							"value": {
+								"value": "@activity('Filtered Metadata Row').output.Value[0].StorageAccount",
+								"type": "Expression"
+							},
+							"type": "string"
+						},
+						"TargetContainer": {
+							"value": {
+								"value": "@activity('Filtered Metadata Row').output.Value[0].TargetContainer",
+								"type": "Expression"
+							},
+							"type": "string"
+						},
+						"Path": {
+							"value": {
+								"value": "@concat(activity('Filtered Metadata Row').output.Value[0].BronzeFolder\n    , '/'\n    , activity('Filtered Metadata Row').output.Value[0].Source\n    , '/'\n    , replace(pipeline().parameters.FileName\n        , concat('.', activity('Filtered Metadata Row').output.Value[0].FileType)\n        , ''\n    )\n    , '/'\n    , replace(pipeline().parameters.FileName\n        , activity('Filtered Metadata Row').output.Value[0].FileType\n        , 'parquet'\n    )\n)",
+								"type": "Expression"
+							},
+							"type": "string"
+						},
+						"SilverDeltaPath": {
+							"value": {
+								"value": "@activity('Filtered Metadata Row').output.Value[0].SilverDeltaPath",
+								"type": "Expression"
+							},
+							"type": "string"
+						}
+					},
+					"snapshot": true,
+					"sparkPool": {
+						"referenceName": {
+							"value": "@activity('Filtered Metadata Row').output.Value[0].SparkPoolName",
+							"type": "Expression"
+						},
+						"type": "BigDataPoolReference"
 					}
 				}
 			}
