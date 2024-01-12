@@ -51,7 +51,7 @@
 					},
 					"activities": [
 						{
-							"name": "Wait1-Start-to-Length-If-End-Is-Ziro",
+							"name": "Wait-Start-to-Length-If-End-Is-Ziro",
 							"type": "Wait",
 							"dependsOn": [],
 							"userProperties": [],
