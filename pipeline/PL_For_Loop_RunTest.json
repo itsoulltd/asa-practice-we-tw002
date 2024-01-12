@@ -100,9 +100,6 @@
 				"defaultValue": 3
 			}
 		},
-		"folder": {
-			"name": "Source to Bronze/PDW"
-		},
 		"annotations": []
 	}
 }
