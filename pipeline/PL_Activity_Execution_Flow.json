@@ -72,7 +72,7 @@
 				}
 			},
 			{
-				"name": "Wait-30Sec",
+				"name": "Wait-10Sec",
 				"type": "Wait",
 				"dependsOn": [
 					{
@@ -84,7 +84,7 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"waitTimeInSeconds": 30
+					"waitTimeInSeconds": 10
 				}
 			},
 			{
@@ -98,13 +98,13 @@
 						]
 					},
 					{
-						"activity": "Wait-30Sec",
+						"activity": "Wait-10Sec",
 						"dependencyConditions": [
 							"Completed"
 						]
 					},
 					{
-						"activity": "Wait-50Sec",
+						"activity": "Wait-5Sec",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -132,7 +132,7 @@
 				}
 			},
 			{
-				"name": "Wait-50Sec",
+				"name": "Wait-5Sec",
 				"type": "Wait",
 				"dependsOn": [
 					{
@@ -144,7 +144,7 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"waitTimeInSeconds": 50
+					"waitTimeInSeconds": 5
 				}
 			}
 		],
