@@ -38,7 +38,7 @@
 				}
 			},
 			{
-				"name": "Fail-A",
+				"name": "Fail-Type-A",
 				"type": "Fail",
 				"dependsOn": [
 					{
@@ -55,7 +55,7 @@
 				}
 			},
 			{
-				"name": "Fail-B",
+				"name": "Fail-Type-B",
 				"type": "Fail",
 				"dependsOn": [
 					{
@@ -72,7 +72,7 @@
 				}
 			},
 			{
-				"name": "Wait-C-10Sec",
+				"name": "Wait-10Sec",
 				"type": "Wait",
 				"dependsOn": [
 					{
@@ -88,23 +88,23 @@
 				}
 			},
 			{
-				"name": "Wait-A-C-OnCom",
+				"name": "Wait-On-Completion",
 				"type": "Wait",
 				"dependsOn": [
 					{
-						"activity": "Fail-A",
+						"activity": "Fail-Type-A",
 						"dependencyConditions": [
 							"Completed"
 						]
 					},
 					{
-						"activity": "Wait-C-10Sec",
+						"activity": "Wait-10Sec",
 						"dependencyConditions": [
 							"Completed"
 						]
 					},
 					{
-						"activity": "Wait-D-5Sec",
+						"activity": "Wait-5Sec",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -112,15 +112,15 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"waitTimeInSeconds": 2
+					"waitTimeInSeconds": 1
 				}
 			},
 			{
-				"name": "Wait-B-OnSuc",
+				"name": "Wait-On-Success",
 				"type": "Wait",
 				"dependsOn": [
 					{
-						"activity": "Fail-B",
+						"activity": "Fail-Type-B",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -128,11 +128,11 @@
 				],
 				"userProperties": [],
 				"typeProperties": {
-					"waitTimeInSeconds": 3
+					"waitTimeInSeconds": 1
 				}
 			},
 			{
-				"name": "Wait-D-5Sec",
+				"name": "Wait-5Sec",
 				"type": "Wait",
 				"dependsOn": [
 					{
