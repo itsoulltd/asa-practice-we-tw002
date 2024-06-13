@@ -1,0 +1,156 @@
+{
+	"name": "PL_Activity_Execution_Flow",
+	"properties": {
+		"description": "Impact of On Success/On Completion/On Fail when transition from one activity to another activity.",
+		"activities": [
+			{
+				"name": "Lookup_Synapse_Environment",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Json_Metadata",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": "metadata",
+							"Filename": "Json_Metadata.json"
+						}
+					}
+				}
+			},
+			{
+				"name": "Fail-A",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Lookup_Synapse_Environment",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Reason-A",
+					"errorCode": "101"
+				}
+			},
+			{
+				"name": "Fail-B",
+				"type": "Fail",
+				"dependsOn": [
+					{
+						"activity": "Lookup_Synapse_Environment",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"message": "Reason-B",
+					"errorCode": "102"
+				}
+			},
+			{
+				"name": "Wait-C-10Sec",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "Lookup_Synapse_Environment",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 10
+				}
+			},
+			{
+				"name": "Wait-A-C-OnCom",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "Fail-A",
+						"dependencyConditions": [
+							"Completed"
+						]
+					},
+					{
+						"activity": "Wait-C-10Sec",
+						"dependencyConditions": [
+							"Completed"
+						]
+					},
+					{
+						"activity": "Wait-D-5Sec",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 2
+				}
+			},
+			{
+				"name": "Wait-B-OnSuc",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "Fail-B",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 3
+				}
+			},
+			{
+				"name": "Wait-D-5Sec",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "Lookup_Synapse_Environment",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 5
+				}
+			}
+		],
+		"folder": {
+			"name": "Source to Bronze/PDW"
+		},
+		"annotations": []
+	}
+}
