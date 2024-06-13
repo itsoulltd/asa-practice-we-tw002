@@ -34,10 +34,6 @@
 								"value": "@pipeline().parameters.Container",
 								"type": "Expression"
 							},
-							"Directory": {
-								"value": "@pipeline().parameters.Directory",
-								"type": "Expression"
-							},
 							"Filename": {
 								"value": "@pipeline().parameters.Filename",
 								"type": "Expression"
