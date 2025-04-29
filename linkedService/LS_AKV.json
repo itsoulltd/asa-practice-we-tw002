@@ -4,7 +4,7 @@
 		"annotations": [],
 		"type": "AzureKeyVault",
 		"typeProperties": {
-			"baseUrl": "https://AKV-PracticePad.vault.azure.net/"
+			"baseUrl": "https://akv-practicepad-v2.vault.azure.net/"
 		}
 	}
 }
