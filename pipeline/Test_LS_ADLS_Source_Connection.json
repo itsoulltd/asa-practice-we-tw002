@@ -1,0 +1,113 @@
+{
+	"name": "Test_LS_ADLS_Source_Connection",
+	"properties": {
+		"activities": [
+			{
+				"name": "Linked_Service_Metadata",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Json_Metadata",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": "metadata",
+							"Filename": "LS_ADLS_Metadata.json"
+						}
+					}
+				}
+			},
+			{
+				"name": "Get ADLS Metadata",
+				"type": "GetMetadata",
+				"dependsOn": [
+					{
+						"activity": "Linked_Service_Metadata",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataset": {
+						"referenceName": "DS_ADLS_Source",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": {
+								"value": "@pipeline().parameters.Target_Container",
+								"type": "Expression"
+							},
+							"Directory": {
+								"value": "@pipeline().parameters.Target_Directory",
+								"type": "Expression"
+							},
+							"Filename": {
+								"value": "@pipeline().parameters.Target_Filename",
+								"type": "Expression"
+							},
+							"ADLS_Primary_URL": {
+								"value": "@activity('Linked_Service_Metadata').output.firstRow.primary_url",
+								"type": "Expression"
+							},
+							"Account_Key_Secret": {
+								"value": "@activity('Linked_Service_Metadata').output.firstRow.account_key_secret",
+								"type": "Expression"
+							}
+						}
+					},
+					"fieldList": [
+						"childItems",
+						"lastModified",
+						"size"
+					],
+					"storeSettings": {
+						"type": "AzureBlobFSReadSettings",
+						"enablePartitionDiscovery": false
+					},
+					"formatSettings": {
+						"type": "BinaryReadSettings"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"Target_Container": {
+				"type": "string"
+			},
+			"Target_Directory": {
+				"type": "string"
+			},
+			"Target_Filename": {
+				"type": "string"
+			}
+		},
+		"annotations": []
+	}
+}
