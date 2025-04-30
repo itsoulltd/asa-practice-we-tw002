@@ -31,7 +31,7 @@
 						"type": "DatasetReference",
 						"parameters": {
 							"Container": "metadata",
-							"Filename": "LS_ADLS_Metadata.json"
+							"Filename": "LS_ADLS_Source_Metadata.json"
 						}
 					}
 				}
@@ -89,6 +89,7 @@
 					],
 					"storeSettings": {
 						"type": "AzureBlobFSReadSettings",
+						"recursive": true,
 						"enablePartitionDiscovery": false
 					},
 					"formatSettings": {
