@@ -1,0 +1,183 @@
+{
+	"name": "PL_Vacuum_DeltaTables",
+	"properties": {
+		"activities": [
+			{
+				"name": "Metadata_Synapse_Vacuum_DeltaTables",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Csv_Metadata",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": "metadata",
+							"Directory": "Vacuum",
+							"Filename": "Synapse_Vacuum_DeltaTables.csv"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "OnlyEnabledRows",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Metadata_Synapse_Vacuum_DeltaTables",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Metadata_Synapse_Vacuum_DeltaTables').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@and( \n    startswith(toLower(item().source_group)\n        , toLower(pipeline().parameters.source_group))\n    , equals(int(item().enabled), 1)\n)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachEnabledRows",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "OnlyEnabledRows",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('OnlyEnabledRows').output.value",
+						"type": "Expression"
+					},
+					"isSequential": true,
+					"activities": [
+						{
+							"name": "VacuumDeltaTable",
+							"type": "SynapseNotebook",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"notebook": {
+									"referenceName": "VacuumDeltaTable",
+									"type": "NotebookReference"
+								},
+								"parameters": {
+									"container_name": {
+										"value": {
+											"value": "@item().container_name",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"storage_account": {
+										"value": {
+											"value": "@item().storage_account",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"retain_count_in_hours": {
+										"value": {
+											"value": "@int(item().retain_count_in_hours)",
+											"type": "Expression"
+										},
+										"type": "int"
+									},
+									"delta_table_path": {
+										"value": {
+											"value": "@item().delta_table_path",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"optimize": {
+										"value": {
+											"value": "@int(item().optimize)",
+											"type": "Expression"
+										},
+										"type": "int"
+									}
+								},
+								"snapshot": true,
+								"sparkPool": {
+									"referenceName": {
+										"value": "@item().spark_pool_name",
+										"type": "Expression"
+									},
+									"type": "BigDataPoolReference"
+								},
+								"executorSize": {
+									"value": "@item().spark_executor_size",
+									"type": "Expression"
+								},
+								"conf": {
+									"spark.dynamicAllocation.enabled": null,
+									"spark.dynamicAllocation.minExecutors": null,
+									"spark.dynamicAllocation.maxExecutors": null
+								},
+								"numExecutors": null
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"container_name": {
+				"type": "string",
+				"defaultValue": "metadata"
+			},
+			"directory_name": {
+				"type": "string",
+				"defaultValue": "Infrastructure/Vacuum"
+			},
+			"filename": {
+				"type": "string",
+				"defaultValue": "Synapse_Vacuum_DeltaTables.csv"
+			},
+			"source_group": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Infrastructure/Vacuum"
+		},
+		"annotations": []
+	}
+}

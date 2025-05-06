@@ -1,0 +1,211 @@
+{
+	"name": "VacuumDeltaTable",
+	"properties": {
+		"description": "#Set base parameter:\ncontainer_name = \"\" #(string)\nstorage_account = \"\" #(string)\nretain_count_in_hours = 168 #(int) in Hours = 7Days\ndelta_table_path = \"\" #(string)\noptimize = 0 #(int) value=0....Any Positive Int  [0 == False]",
+		"nbformat": 4,
+		"nbformat_minor": 2,
+		"sessionProperties": {
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
+			"numExecutors": 2,
+			"conf": {
+				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.minExecutors": "2",
+				"spark.dynamicAllocation.maxExecutors": "2",
+				"spark.autotune.trackingId": "ba63b50e-3ff4-4044-b783-2c501d3a82f4"
+			}
+		},
+		"metadata": {
+			"saveOutput": true,
+			"enableDebugMode": false,
+			"kernelspec": {
+				"name": "synapse_pyspark",
+				"display_name": "Synapse PySpark"
+			},
+			"language_info": {
+				"name": "python"
+			},
+			"sessionKeepAliveTimeout": 30
+		},
+		"cells": [
+			{
+				"cell_type": "code",
+				"source": [
+					"from pyspark.sql.functions import *\r\n",
+					"from pyspark.sql.types import *\r\n",
+					"from delta.tables import * "
+				],
+				"execution_count": 73
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"#Setting (as base parameter from pipeline) vars:\r\n",
+					"#container_name = \"data\"\r\n",
+					"#storage_account = \"dgdnastwedev\"\r\n",
+					"#retain_count_in_hours = 168 # 168 hours = 7 days\r\n",
+					"#delta_table_path = \"/Gold/Google/GA4/ua_ga4_downloads_test_dim_modeling\"\r\n",
+					"#optimize = 0\r\n",
+					"\r\n",
+					"#Derived vars:\r\n",
+					"base_io_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net\"\r\n",
+					"print(f\"Base Path: {base_io_path}\")\r\n",
+					"\r\n",
+					"delta_table_full_path = f\"{base_io_path}/{delta_table_path}\".replace('//', '/').replace(':/', '://')\r\n",
+					"print(f\"full path: {delta_table_full_path}\")\r\n",
+					"\r\n",
+					"run_optimize = False if optimize == 0 else True"
+				],
+				"execution_count": 74
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"#Read test:\r\n",
+					"#Convert into temp_view:\r\n",
+					"#df = spark.read.format(\"delta\").load(delta_table_full_path)\r\n",
+					"#\r\n",
+					"#delta_table_name = \"ua_ga4_downloads_test_dim_modeling\"\r\n",
+					"#df.createOrReplaceTempView(delta_table_name)\r\n",
+					"#spark.sql(f\"SELECT * FROM {delta_table_name}\").show(5)\r\n",
+					"#"
+				],
+				"execution_count": 75
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"print(\r\n",
+					"\"\"\"\r\n",
+					"Warning!!!\r\n",
+					"It is recommended that you set a retention interval to be at least 7 days, \r\n",
+					"because old snapshots and uncommitted files can still be in use \r\n",
+					"by concurrent readers or writers to the table. \r\n",
+					"If VACUUM cleans up active files, \r\n",
+					"concurrent readers can fail or, worse, tables can be corrupted \r\n",
+					"when VACUUM deletes files that have not yet been committed. \r\n",
+					"You must choose an interval that is longer than \r\n",
+					"the longest running concurrent transaction and \r\n",
+					"the longest period that any stream can lag behind \r\n",
+					"the most recent update to the table.\r\n",
+					"\"\"\")"
+				],
+				"execution_count": 76
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"#Vacuum cmd:\r\n",
+					"#spark.sql(\"SET spark.delta.retentionDurationCheck.enabled = false\")\r\n",
+					"#spark.sql(f\"DESCRIBE HISTORY delta.{delta_table_name}\")\r\n",
+					"#spark.sql(f\"VACUUM DnA.{delta_table_name} RETAIN {retain_count_in_hours} HOURS\").show()"
+				],
+				"execution_count": 77
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"#Vacuum cmd:\r\n",
+					"#\r\n",
+					"print(f\"Vacuum Operation Performing On: delta.{delta_table_full_path}\")\r\n",
+					"spark.sql(\"SET spark.databricks.delta.retentionDurationCheck.enabled = false\")\r\n",
+					"print(\"Setting retentionDurationCheck.enabled = false [DONE]\")\r\n",
+					"\r\n",
+					"try:\r\n",
+					"    if (DeltaTable.isDeltaTable(spark, delta_table_full_path)):\r\n",
+					"        print(\"Vacuum Starting...\")\r\n",
+					"        dtlTable = DeltaTable.forPath(spark, delta_table_full_path)\r\n",
+					"        #Do vacuum:\r\n",
+					"        dtlTable.vacuum(retain_count_in_hours)\r\n",
+					"        #Do optimize:\r\n",
+					"        if run_optimize: \r\n",
+					"            dtlTable.optimize()\r\n",
+					"        #Print logs:\r\n",
+					"        #dtlTable.history().show(5)\r\n",
+					"        print(\"Vacuum Complete!\") if run_optimize == False else print(\"Vacuum & Optimize Complete!\")\r\n",
+					"except Exception as error:\r\n",
+					"    print(f\"Vaccum on delta.{delta_table_full_path} has failed. \\n  Error: {error}\")\r\n",
+					"\r\n",
+					"spark.sql(\"SET spark.databricks.delta.retentionDurationCheck.enabled = true\")\r\n",
+					"print(\"Setting retentionDurationCheck.enabled = true [DONE]\")"
+				],
+				"execution_count": 78
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					""
+				],
+				"execution_count": null
+			}
+		]
+	}
+}
