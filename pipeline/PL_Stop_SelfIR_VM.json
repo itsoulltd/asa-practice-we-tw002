@@ -1,0 +1,135 @@
+{
+	"name": "PL_Stop_SelfIR_VM",
+	"properties": {
+		"description": "Pipeline to stop the Azure Self Hosted Integration Runtime after the run is completed.",
+		"activities": [
+			{
+				"name": "Lookup Pipeline Parameters",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Csv_Metadata",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": "metadata",
+							"Filename": "SelfIR_VM_Parameters.csv"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Check Azure VM Status again",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Lookup Pipeline Parameters",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 1,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "GET",
+					"url": {
+						"value": "@concat('https://management.azure.com/subscriptions/'\n    ,activity('Lookup Pipeline Parameters').output.value[0].SubscriptionId\n    ,'/resourceGroups/'\n    ,activity('Lookup Pipeline Parameters').output.value[0].ResourceGroupName\n    ,'/providers/Microsoft.Compute/virtualMachines/'\n    ,activity('Lookup Pipeline Parameters').output.value[0].VMName\n    ,'/InstanceView?api-version=2020-12-01'\n) ",
+						"type": "Expression"
+					},
+					"connectVia": {
+						"referenceName": "AutoResolveIntegrationRuntime",
+						"type": "IntegrationRuntimeReference"
+					},
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://management.azure.com"
+					}
+				}
+			},
+			{
+				"name": "If VM is running",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Check Azure VM Status again",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('Check Azure VM Status again').output.statuses[1].displayStatus\n    ,'VM running'\n)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Stop Azure VM",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 3,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"url": {
+									"value": "@concat('https://management.azure.com/subscriptions/'\n    ,activity('Lookup Pipeline Parameters').output.value[0].SubscriptionId\n    ,'/resourceGroups/'\n    ,activity('Lookup Pipeline Parameters').output.value[0].ResourceGroupName\n    ,'/providers/Microsoft.Compute/virtualMachines/'\n    ,activity('Lookup Pipeline Parameters').output.value[0].VMName\n    ,'/'\n    ,activity('Lookup Pipeline Parameters').output.value[0].StopCommand\n    ,'?api-version=2020-12-01'\n)",
+									"type": "Expression"
+								},
+								"connectVia": {
+									"referenceName": "AutoResolveIntegrationRuntime",
+									"type": "IntegrationRuntimeReference"
+								},
+								"body": {
+									"value": "@activity('Lookup Pipeline Parameters').output.value[0].Body",
+									"type": "Expression"
+								},
+								"authentication": {
+									"type": "MSI",
+									"resource": "https://management.azure.com"
+								}
+							}
+						}
+					]
+				}
+			}
+		],
+		"folder": {
+			"name": "Infrastructure/SelfIR_VM"
+		},
+		"annotations": []
+	}
+}
