@@ -1,0 +1,151 @@
+{
+	"name": "PL_Start_SelfIR_VM",
+	"properties": {
+		"description": "Pipeline to check status and start Azure Virtual Machine hosting Self Hosted Integration Runtime.",
+		"activities": [
+			{
+				"name": "Check Azure VM Status",
+				"type": "WebActivity",
+				"dependsOn": [
+					{
+						"activity": "Lookup Pipeline Parameters",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 1,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"method": "GET",
+					"url": {
+						"value": "@concat('https://management.azure.com/subscriptions/'\n    , activity('Lookup Pipeline Parameters').output.value[0].SubscriptionId\n    , '/resourceGroups/'\n    , activity('Lookup Pipeline Parameters').output.value[0].ResourceGroupName\n    , '/providers/Microsoft.Compute/virtualMachines/'\n    , activity('Lookup Pipeline Parameters').output.value[0].VMName\n    , '/InstanceView?api-version=2020-12-01'\n)",
+						"type": "Expression"
+					},
+					"connectVia": {
+						"referenceName": "AutoResolveIntegrationRuntime",
+						"type": "IntegrationRuntimeReference"
+					},
+					"authentication": {
+						"type": "MSI",
+						"resource": "https://management.azure.com"
+					}
+				}
+			},
+			{
+				"name": "If VM is stopped",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Check Azure VM Status",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@or(equals(activity('Check Azure VM Status').output.statuses[1].displayStatus,'VM deallocated')\n    , equals(activity('Check Azure VM Status').output.statuses[1].displayStatus,'VM stopped')\n)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "Start Azure VM",
+							"type": "WebActivity",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 3,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"url": {
+									"value": "@concat('https://management.azure.com/subscriptions/'\n    , activity('Lookup Pipeline Parameters').output.value[0].SubscriptionId\n    , '/resourceGroups/'\n    , activity('Lookup Pipeline Parameters').output.value[0].ResourceGroupName\n    , '/providers/Microsoft.Compute/virtualMachines/'\n    , activity('Lookup Pipeline Parameters').output.value[0].VMName\n    , '/'\n    , activity('Lookup Pipeline Parameters').output.value[0].StartCommand\n    , '?api-version=2020-12-01'\n)",
+									"type": "Expression"
+								},
+								"connectVia": {
+									"referenceName": "AutoResolveIntegrationRuntime",
+									"type": "IntegrationRuntimeReference"
+								},
+								"body": {
+									"value": "@activity('Lookup Pipeline Parameters').output.value[0].Body",
+									"type": "Expression"
+								},
+								"authentication": {
+									"type": "MSI",
+									"resource": "https://management.azure.com"
+								}
+							}
+						},
+						{
+							"name": "Wait 5 minutes to start IR_copy1",
+							"type": "Wait",
+							"dependsOn": [
+								{
+									"activity": "Start Azure VM",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": 290
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Lookup Pipeline Parameters",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Csv_Metadata",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": "metadata",
+							"Filename": "SelfIR_VM_Parameters.csv"
+						}
+					},
+					"firstRowOnly": false
+				}
+			}
+		],
+		"folder": {
+			"name": "Infrastructure/SelfIR_VM"
+		},
+		"annotations": []
+	}
+}
