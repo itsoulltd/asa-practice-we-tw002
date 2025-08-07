@@ -1,0 +1,44 @@
+{
+	"name": "LS_ADLS_Source_SP",
+	"properties": {
+		"description": "Connecting to ADLS storage account: dgdnastwe[dev/prod] using Service-Principal and Storage Key URL.",
+		"parameters": {
+			"ADLS_Primary_URL": {
+				"type": "string"
+			},
+			"Tenant_ID": {
+				"type": "string",
+				"defaultValue": "dcefdd4c-e915-4117-aeff-3314a0179024"
+			},
+			"Service_Principal_ID": {
+				"type": "string"
+			},
+			"Service_Principal_Key_Secret": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "@{linkedService().ADLS_Primary_URL}",
+			"tenant": "@{linkedService().Tenant_ID}",
+			"servicePrincipalId": "@{linkedService().Service_Principal_ID}",
+			"servicePrincipalCredentialType": "ServicePrincipalKey",
+			"servicePrincipalCredential": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_AKV",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().Service_Principal_Key_Secret",
+					"type": "Expression"
+				}
+			}
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

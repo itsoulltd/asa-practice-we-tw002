@@ -1,0 +1,212 @@
+{
+	"name": "PL_Email_Sender",
+	"properties": {
+		"activities": [
+			{
+				"name": "Metadata_Pipeline_Status",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Json_Metadata",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": "metadata",
+							"Filename": "Email_Notifications/Pipeline_Status_Notifications.json"
+						}
+					},
+					"firstRowOnly": false
+				}
+			},
+			{
+				"name": "Metadata_Filter",
+				"type": "Filter",
+				"dependsOn": [
+					{
+						"activity": "Metadata_Pipeline_Status",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('Metadata_Pipeline_Status').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@and(\n    and(item().is_active, not(empty(item().receiver)))\n    , equals(pipeline().parameters.CallingPipelineName, item().calling_pipeline_name)\n)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "if_count_is_one",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "Metadata_Filter",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(activity('Metadata_Filter').output.FilteredItemsCount, 1)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "SendEmailNotificatin",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "SendEmailNotificatin_Api",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "POST",
+								"url": {
+									"value": "@activity('SendEmailNotificatin_Api').output.firstRow.url",
+									"type": "Expression"
+								},
+								"connectVia": {
+									"referenceName": "AutoResolveIntegrationRuntime",
+									"type": "IntegrationRuntimeReference"
+								},
+								"body": {
+									"value": "{\n    \"status\" : \"@{pipeline().parameters.Status}\",\n    \"importance\" : \n                \"@{if(equals(pipeline().parameters.Status, 'Failed'), 'High', 'Normal')\n                }\",\n    \"subject\" : \"@{pipeline().parameters.CallingPipelineName} was @{pipeline().parameters.Status} in @{pipeline().DataFactory}\",\n    \"SynapsePipeline\" : \"@{pipeline().parameters.CallingPipelineName}\", \n    \"SynapseEnvironment\" : \"@{pipeline().DataFactory}\",\n    \"TriggerName\" : \"@{pipeline().parameters.TriggerName}\",\n    \"TriggerTime\" : \"@{pipeline().parameters.TriggerTime}\",\n    \"PipelineName\" : \"@{pipeline().Pipeline}\",\n    \"Receiver\" : \"@{activity('Metadata_Filter').output.value[0].receiver}\",\n    \"CcGroup\" : \"@{activity('Metadata_Filter').output.value[0].cc_group}\"\n}",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "SendEmailNotificatin_Api",
+							"type": "Lookup",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"source": {
+									"type": "JsonSource",
+									"storeSettings": {
+										"type": "AzureBlobFSReadSettings",
+										"recursive": true,
+										"enablePartitionDiscovery": false
+									},
+									"formatSettings": {
+										"type": "JsonReadSettings"
+									}
+								},
+								"dataset": {
+									"referenceName": "Json_Metadata",
+									"type": "DatasetReference",
+									"parameters": {
+										"Container": "metadata",
+										"Filename": "Email_Notifications/PL_Email_Sender_API.json"
+									}
+								},
+								"firstRowOnly": true
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Check_Status",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "if_count_is_one",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(pipeline().parameters.Status, 'Failed')",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "PL_Email_Sender_Failed",
+							"type": "Fail",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"message": {
+									"value": "@concat(pipeline().parameters.CallingPipelineName\n    , ' has been failed to Execute. Email notification has been sent.')",
+									"type": "Expression"
+								},
+								"errorCode": "500"
+							}
+						}
+					]
+				}
+			}
+		],
+		"parameters": {
+			"Status": {
+				"type": "string",
+				"defaultValue": "Failed"
+			},
+			"CallingPipelineName": {
+				"type": "string"
+			},
+			"RunId": {
+				"type": "string"
+			},
+			"TriggerName": {
+				"type": "string"
+			},
+			"TriggerTime": {
+				"type": "string"
+			}
+		},
+		"folder": {
+			"name": "Infrastructure/Email_Notifications"
+		},
+		"annotations": []
+	}
+}

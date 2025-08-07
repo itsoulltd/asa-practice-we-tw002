@@ -1,0 +1,10 @@
+{
+	"name": "LS_AKV",
+	"properties": {
+		"annotations": [],
+		"type": "AzureKeyVault",
+		"typeProperties": {
+			"baseUrl": "https://akv-practicepad-v2.vault.azure.net/"
+		}
+	}
+}

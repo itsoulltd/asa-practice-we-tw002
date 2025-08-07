@@ -13,7 +13,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "46ba1c49-a7f5-4185-8347-27dbfac8215c"
+				"spark.autotune.trackingId": "0b3695b8-852e-4567-9081-4d022d98d2f8"
 			}
 		},
 		"metadata": {
@@ -33,8 +33,11 @@
 				"cell_type": "code",
 				"source": [
 					"#Setting vars:\r\n",
-					"#container_name = \"data\"\r\n",
-					"#storage_account = \"dgdnastwedev\"\r\n",
+					"if not 'container_name' in locals():\r\n",
+					"    container_name = \"data\"\r\n",
+					"if not 'storage_account' in locals():\r\n",
+					"    storage_account = \"dgdnastwedev\"\r\n",
+					"#\r\n",
 					"base_io_path = f\"abfss://{container_name}@{storage_account}.dfs.core.windows.net\"\r\n",
 					"print(f\"Base Path: {base_io_path}\")\r\n",
 					"print(f\"Execution Complete on {spark_pool_name}:{spark_executor_size}\")"

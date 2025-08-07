@@ -10,9 +10,6 @@
 				"type": "string",
 				"defaultValue": "metadata"
 			},
-			"Directory": {
-				"type": "string"
-			},
 			"Filename": {
 				"type": "string",
 				"defaultValue": "Json_Metadata.json"
@@ -25,10 +22,6 @@
 				"type": "AzureBlobFSLocation",
 				"fileName": {
 					"value": "@dataset().Filename",
-					"type": "Expression"
-				},
-				"folderPath": {
-					"value": "@dataset().Directory",
 					"type": "Expression"
 				},
 				"fileSystem": {

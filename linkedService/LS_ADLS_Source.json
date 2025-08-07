@@ -1,0 +1,34 @@
+{
+	"name": "LS_ADLS_Source",
+	"properties": {
+		"description": "Connecting to storage account: dna____[dev/prod] using Account Key and Storage Key URL.",
+		"parameters": {
+			"ADLS_Primary_URL": {
+				"type": "string"
+			},
+			"Account_Key_Secret": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureBlobFS",
+		"typeProperties": {
+			"url": "@{linkedService().ADLS_Primary_URL}",
+			"accountKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_AKV",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().Account_Key_Secret",
+					"type": "Expression"
+				}
+			}
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}

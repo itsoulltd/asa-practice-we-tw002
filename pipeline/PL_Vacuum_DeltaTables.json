@@ -1,9 +1,9 @@
 {
-	"name": "PL_Test_Read_Metadata",
+	"name": "PL_Vacuum_DeltaTables",
 	"properties": {
 		"activities": [
 			{
-				"name": "JsonLookUp",
+				"name": "Metadata_Synapse_Vacuum_DeltaTables",
 				"type": "Lookup",
 				"dependsOn": [],
 				"policy": {
@@ -16,39 +16,34 @@
 				"userProperties": [],
 				"typeProperties": {
 					"source": {
-						"type": "JsonSource",
+						"type": "DelimitedTextSource",
 						"storeSettings": {
 							"type": "AzureBlobFSReadSettings",
 							"recursive": true,
 							"enablePartitionDiscovery": false
 						},
 						"formatSettings": {
-							"type": "JsonReadSettings"
+							"type": "DelimitedTextReadSettings"
 						}
 					},
 					"dataset": {
-						"referenceName": "Json_Metadata",
+						"referenceName": "Csv_Metadata",
 						"type": "DatasetReference",
 						"parameters": {
-							"Container": {
-								"value": "@pipeline().parameters.Container",
-								"type": "Expression"
-							},
-							"Filename": {
-								"value": "@pipeline().parameters.Filename",
-								"type": "Expression"
-							}
+							"Container": "metadata",
+							"Directory": "Vacuum",
+							"Filename": "Synapse_Vacuum_DeltaTables.csv"
 						}
 					},
 					"firstRowOnly": false
 				}
 			},
 			{
-				"name": "EachRow",
-				"type": "ForEach",
+				"name": "OnlyEnabledRows",
+				"type": "Filter",
 				"dependsOn": [
 					{
-						"activity": "JsonLookUp",
+						"activity": "Metadata_Synapse_Vacuum_DeltaTables",
 						"dependencyConditions": [
 							"Succeeded"
 						]
@@ -57,13 +52,36 @@
 				"userProperties": [],
 				"typeProperties": {
 					"items": {
-						"value": "@activity('JsonLookUp').output.value",
+						"value": "@activity('Metadata_Synapse_Vacuum_DeltaTables').output.value",
+						"type": "Expression"
+					},
+					"condition": {
+						"value": "@and( \n    startswith(toLower(item().source_group)\n        , toLower(pipeline().parameters.source_group))\n    , equals(int(item().enabled), 1)\n)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "ForEachEnabledRows",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "OnlyEnabledRows",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@activity('OnlyEnabledRows').output.value",
 						"type": "Expression"
 					},
 					"isSequential": true,
 					"activities": [
 						{
-							"name": "JustPrintTestBook",
+							"name": "VacuumDeltaTable",
 							"type": "SynapseNotebook",
 							"dependsOn": [],
 							"policy": {
@@ -76,24 +94,10 @@
 							"userProperties": [],
 							"typeProperties": {
 								"notebook": {
-									"referenceName": "JustPrintTestBook",
+									"referenceName": "VacuumDeltaTable",
 									"type": "NotebookReference"
 								},
 								"parameters": {
-									"spark_executor_size": {
-										"value": {
-											"value": "@item().spark_executor_size",
-											"type": "Expression"
-										},
-										"type": "string"
-									},
-									"spark_pool_name": {
-										"value": {
-											"value": "@item().spark_pool_name",
-											"type": "Expression"
-										},
-										"type": "string"
-									},
 									"container_name": {
 										"value": {
 											"value": "@item().container_name",
@@ -107,6 +111,27 @@
 											"type": "Expression"
 										},
 										"type": "string"
+									},
+									"retain_count_in_hours": {
+										"value": {
+											"value": "@int(item().retain_count_in_hours)",
+											"type": "Expression"
+										},
+										"type": "int"
+									},
+									"delta_table_path": {
+										"value": {
+											"value": "@item().delta_table_path",
+											"type": "Expression"
+										},
+										"type": "string"
+									},
+									"optimize": {
+										"value": {
+											"value": "@int(item().optimize)",
+											"type": "Expression"
+										},
+										"type": "int"
 									}
 								},
 								"snapshot": true,
@@ -134,20 +159,24 @@
 			}
 		],
 		"parameters": {
-			"Container": {
+			"container_name": {
 				"type": "string",
 				"defaultValue": "metadata"
 			},
-			"Directory": {
-				"type": "string"
-			},
-			"Filename": {
+			"directory_name": {
 				"type": "string",
-				"defaultValue": "Json_Metadata.json"
+				"defaultValue": "Infrastructure/Vacuum"
+			},
+			"filename": {
+				"type": "string",
+				"defaultValue": "Synapse_Vacuum_DeltaTables.csv"
+			},
+			"source_group": {
+				"type": "string"
 			}
 		},
 		"folder": {
-			"name": "S3 to ADLS"
+			"name": "Infrastructure/Vacuum"
 		},
 		"annotations": []
 	}
