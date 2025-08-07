@@ -1,0 +1,198 @@
+{
+	"name": "TEST_PL_Email_Sender",
+	"properties": {
+		"activities": [
+			{
+				"name": "Execute PL_Email_Sender_01",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "SimulationActivity_01",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_Email_Sender",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Status": {
+							"value": "@if(empty(pipeline().parameters.SimulationActivity_01_Status)\n    , activity('SimulationActivity_01').status\n    , pipeline().parameters.SimulationActivity_01_Status\n)",
+							"type": "Expression"
+						},
+						"CallingPipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"RunId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"TriggerName": {
+							"value": "@pipeline().TriggerName",
+							"type": "Expression"
+						},
+						"TriggerTime": {
+							"value": "@formatDateTime(pipeline().TriggerTime, 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "SimulationActivity_01",
+				"type": "IfCondition",
+				"dependsOn": [],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@if(startswith(pipeline().parameters.SimulationActivity_01_Status, 'Failed')\n    , true\n    , false\n)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "FailSimulationActivity",
+							"type": "Fail",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"message": "Its Failed",
+								"errorCode": "101"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Success SimulationActivity_01",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "SimulationActivity_01",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 1
+				}
+			},
+			{
+				"name": "SimulationActivity_02",
+				"type": "IfCondition",
+				"dependsOn": [
+					{
+						"activity": "SimulationActivity_01",
+						"dependencyConditions": [
+							"Completed"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@if(startswith(pipeline().parameters.SimulationActivity_02_Status, 'Failed')\n    , true\n    , false\n)",
+						"type": "Expression"
+					},
+					"ifTrueActivities": [
+						{
+							"name": "FailSimulationActivity_copy1",
+							"type": "Fail",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"message": "Its Failed",
+								"errorCode": "101"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "Success SimulationActivity_02",
+				"type": "Wait",
+				"dependsOn": [
+					{
+						"activity": "SimulationActivity_02",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"waitTimeInSeconds": 1
+				}
+			},
+			{
+				"name": "Execute PL_Email_Sender_02",
+				"type": "ExecutePipeline",
+				"dependsOn": [
+					{
+						"activity": "SimulationActivity_02",
+						"dependencyConditions": [
+							"Failed"
+						]
+					}
+				],
+				"policy": {
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"pipeline": {
+						"referenceName": "PL_Email_Sender",
+						"type": "PipelineReference"
+					},
+					"waitOnCompletion": true,
+					"parameters": {
+						"Status": {
+							"value": "@if(empty(pipeline().parameters.SimulationActivity_01_Status)\n    , activity('SimulationActivity_01').status\n    , pipeline().parameters.SimulationActivity_01_Status\n)",
+							"type": "Expression"
+						},
+						"CallingPipelineName": {
+							"value": "@pipeline().Pipeline",
+							"type": "Expression"
+						},
+						"RunId": {
+							"value": "@pipeline().RunId",
+							"type": "Expression"
+						},
+						"TriggerName": {
+							"value": "@pipeline().TriggerName",
+							"type": "Expression"
+						},
+						"TriggerTime": {
+							"value": "@formatDateTime(pipeline().TriggerTime, 'yyyy-MM-dd HH:mm:ss')",
+							"type": "Expression"
+						}
+					}
+				}
+			}
+		],
+		"parameters": {
+			"SimulationActivity_01_Status": {
+				"type": "string",
+				"defaultValue": "Failed"
+			},
+			"SimulationActivity_02_Status": {
+				"type": "string",
+				"defaultValue": "Failed"
+			}
+		},
+		"folder": {
+			"name": "Infrastructure/Email_Notifications/TEST"
+		},
+		"annotations": []
+	}
+}
