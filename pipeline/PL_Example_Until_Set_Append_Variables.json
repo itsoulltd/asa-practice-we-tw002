@@ -1,0 +1,173 @@
+{
+	"name": "PL_Example_Until_Set_Append_Variables",
+	"properties": {
+		"activities": [
+			{
+				"name": "Until_Loop_Ends",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "Starts_Carry",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@equals(int(variables('counter')), 5)",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Wait1",
+							"type": "Wait",
+							"dependsOn": [
+								{
+									"activity": "Update_Carry",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": 1
+							}
+						},
+						{
+							"name": "Increment",
+							"type": "SetVariable",
+							"dependsOn": [],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "counter",
+								"value": {
+									"value": "@add(variables('carry'), 1)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Update_Carry",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Increment",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "carry",
+								"value": {
+									"value": "@variables('counter')",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Family_Names",
+							"type": "AppendVariable",
+							"dependsOn": [
+								{
+									"activity": "Wait1",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "family_names",
+								"value": {
+									"value": "@variables('counter')",
+									"type": "Expression"
+								}
+							}
+						}
+					],
+					"timeout": "0.00:10:00"
+				}
+			},
+			{
+				"name": "Starts_Carry",
+				"type": "SetVariable",
+				"dependsOn": [],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "carry",
+					"value": {
+						"value": "@pipeline().parameters.start_form",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Family_Names_Output",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "Until_Loop_Ends",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "family_names_output",
+					"value": {
+						"value": "@variables('family_names')",
+						"type": "Expression"
+					}
+				}
+			}
+		],
+		"parameters": {
+			"start_form": {
+				"type": "int",
+				"defaultValue": 1
+			}
+		},
+		"variables": {
+			"counter": {
+				"type": "Integer",
+				"defaultValue": 0
+			},
+			"carry": {
+				"type": "Integer",
+				"defaultValue": 0
+			},
+			"family_names": {
+				"type": "Array"
+			},
+			"family_names_output": {
+				"type": "Array"
+			}
+		},
+		"folder": {
+			"name": "Source to Bronze/CCC_RightLinks"
+		},
+		"annotations": []
+	}
+}
