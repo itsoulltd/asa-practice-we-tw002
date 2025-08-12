@@ -92,7 +92,7 @@
 							"typeProperties": {
 								"variableName": "family_names",
 								"value": {
-									"value": "@variables('counter')",
+									"value": "@json(concat('{\"counter\"', ':', '\"', variables('counter'), '\"', '}'))",
 									"type": "Expression"
 								}
 							}
