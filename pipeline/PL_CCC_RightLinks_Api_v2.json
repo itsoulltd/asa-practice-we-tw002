@@ -1,0 +1,279 @@
+{
+	"name": "PL_CCC_RightLinks_Api_v2",
+	"properties": {
+		"activities": [
+			{
+				"name": "CCC_RightsLink_Api_Endpoints",
+				"type": "Lookup",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "JsonSource",
+						"storeSettings": {
+							"type": "AzureBlobFSReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "JsonReadSettings"
+						}
+					},
+					"dataset": {
+						"referenceName": "Json_Metadata",
+						"type": "DatasetReference",
+						"parameters": {
+							"Container": "metadata",
+							"Filename": "CCC_RightsLink/CCC_RightsLink_Api_Endpoints.json"
+						}
+					}
+				}
+			},
+			{
+				"name": "StartDate",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "CCC_RightsLink_Api_Endpoints",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "startDate",
+					"value": {
+						"value": "@if(not(empty(activity('CCC_RightsLink_Api_Endpoints').output.firstRow.startDate))\n    , activity('CCC_RightsLink_Api_Endpoints').output.firstRow.startDate\n    , formatDateTime(subtractFromTime(utcNow(), 1, 'Day')\n            , 'yyyy-MM-dd'\n    )\n)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "EndDate",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "CCC_RightsLink_Api_Endpoints",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "endDate",
+					"value": {
+						"value": "@if(not(empty(activity('CCC_RightsLink_Api_Endpoints').output.firstRow.endDate))\n    , activity('CCC_RightsLink_Api_Endpoints').output.firstRow.endDate\n    , formatDateTime(utcNow(), 'yyyy-MM-dd')\n)",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "CCCRightsLinkApp",
+				"type": "AzureFunctionActivity",
+				"dependsOn": [
+					{
+						"activity": "StartDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					},
+					{
+						"activity": "EndDate",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"functionName": {
+						"value": "@concat(pipeline().parameters.azure_function_name\n    , '?'\n    , 'startDate=', encodeUriComponent(variables('startDate'))\n    , '&', 'endDate=', encodeUriComponent(variables('endDate'))\n    , '&', 'startPage=', activity('CCC_RightsLink_Api_Endpoints').output.firstRow.startPage\n    , '&', 'itemsPerPage=', activity('CCC_RightsLink_Api_Endpoints').output.firstRow.itemsPerPage\n)",
+						"type": "Expression"
+					},
+					"method": "GET"
+				},
+				"linkedServiceName": {
+					"referenceName": "LS_CCC_RightsLink_App",
+					"type": "LinkedServiceReference",
+					"parameters": {
+						"azure_function_app_url": {
+							"value": "@concat('https://'\n    , pipeline().parameters.azure_function_app_domain\n)",
+							"type": "Expression"
+						},
+						"secret_key": {
+							"value": "@pipeline().parameters.app_function_key_in_kvo",
+							"type": "Expression"
+						}
+					}
+				}
+			},
+			{
+				"name": "Status Check Get URI",
+				"type": "SetVariable",
+				"dependsOn": [
+					{
+						"activity": "CCCRightsLinkApp",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"variableName": "status_check_get_uri",
+					"value": {
+						"value": "@activity('CCCRightsLinkApp').output.statusQueryGetUri",
+						"type": "Expression"
+					}
+				}
+			},
+			{
+				"name": "Until-RuntimeStatus-Running-or-Pending",
+				"type": "Until",
+				"dependsOn": [
+					{
+						"activity": "Status Check Get URI",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"expression": {
+						"value": "@bool(variables('runtime_status'))",
+						"type": "Expression"
+					},
+					"activities": [
+						{
+							"name": "Wait-1-Sec",
+							"type": "Wait",
+							"dependsOn": [],
+							"userProperties": [],
+							"typeProperties": {
+								"waitTimeInSeconds": 1
+							}
+						},
+						{
+							"name": "Set Running Status",
+							"type": "SetVariable",
+							"dependsOn": [
+								{
+									"activity": "Check Runtime Status",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"variableName": "runtime_status",
+								"value": {
+									"value": "@if(equals(activity('Check Runtime Status').output.runtimeStatus\n    , 'Completed')\n    , true\n    , false\n)",
+									"type": "Expression"
+								}
+							}
+						},
+						{
+							"name": "Check Runtime Status",
+							"type": "WebActivity",
+							"dependsOn": [
+								{
+									"activity": "Wait-1-Sec",
+									"dependencyConditions": [
+										"Succeeded"
+									]
+								}
+							],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"method": "GET",
+								"url": {
+									"value": "@variables('status_check_get_uri')",
+									"type": "Expression"
+								},
+								"connectVia": {
+									"referenceName": "AutoResolveIntegrationRuntime",
+									"type": "IntegrationRuntimeReference"
+								}
+							}
+						}
+					],
+					"timeout": "0.00:15:00"
+				}
+			}
+		],
+		"parameters": {
+			"azure_function_app_domain": {
+				"type": "string",
+				"defaultValue": "cccrightslinkapp-fcemawgpbce3hndq.germanywestcentral-01.azurewebsites.net"
+			},
+			"app_function_key_in_kvo": {
+				"type": "string",
+				"defaultValue": "LS-CCC-RightsLinks-Function-Key"
+			},
+			"azure_function_name": {
+				"type": "string",
+				"defaultValue": "orchestrators/ccc_rightslink_app_orchestrator"
+			}
+		},
+		"variables": {
+			"startDate": {
+				"type": "String"
+			},
+			"endDate": {
+				"type": "String"
+			},
+			"status_check_get_uri": {
+				"type": "String"
+			},
+			"runtime_status": {
+				"type": "Boolean",
+				"defaultValue": false
+			}
+		},
+		"folder": {
+			"name": "Source to Bronze/CCC_RightLinks"
+		},
+		"annotations": []
+	}
+}
