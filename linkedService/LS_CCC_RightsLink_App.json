@@ -1,0 +1,34 @@
+{
+	"name": "LS_CCC_RightsLink_App",
+	"properties": {
+		"parameters": {
+			"azure_function_app_url": {
+				"type": "string"
+			},
+			"secret_key": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "AzureFunction",
+		"typeProperties": {
+			"functionAppUrl": "@{linkedService().azure_function_app_url}",
+			"authentication": "Anonymous",
+			"functionKey": {
+				"type": "AzureKeyVaultSecret",
+				"store": {
+					"referenceName": "LS_AKV",
+					"type": "LinkedServiceReference"
+				},
+				"secretName": {
+					"value": "@linkedService().secret_key",
+					"type": "Expression"
+				}
+			}
+		},
+		"connectVia": {
+			"referenceName": "AutoResolveIntegrationRuntime",
+			"type": "IntegrationRuntimeReference"
+		}
+	}
+}
